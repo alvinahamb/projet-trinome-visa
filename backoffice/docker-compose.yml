@@ -1,0 +1,36 @@
+services:
+  backoffice:
+    image: tomcat:10.1-jdk21
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./target-docker/visabackoffice-0.0.1-SNAPSHOT.war:/usr/local/tomcat/webapps/ROOT.war
+    environment:
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      maven-build:
+        condition: service_completed_successfully
+    networks:
+      - backoffice_network
+
+  maven-build:
+    image: maven:4.0.0-rc-5-eclipse-temurin-25-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - maven-repo:/root/.m2
+    command: >
+      bash -c "
+        mvn clean package -PalternateBuildDir -DskipTests
+      "
+    networks:
+      - backoffice_network
+
+volumes:
+  maven-repo:
+
+networks:
+  backoffice_network:
+    driver: bridge

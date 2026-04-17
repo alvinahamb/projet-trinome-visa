@@ -1,0 +1,38 @@
+services:
+  frontoffice:
+    image: tomcat:10.1-jdk21
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./target-docker/visa-frontoffice.war:/usr/local/tomcat/webapps/ROOT.war
+    environment:
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      maven-build:
+        condition: service_completed_successfully
+    networks:
+      - frontoffice_network
+
+  maven-build:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /app
+    volumes:
+      - .:/app
+      - maven-repo:/root/.m2
+    command: >
+      bash -c "
+        mvn install:install-file -Dfile=/app/src/main/webapp/WEB-INF/lib/framework-1.0.jar -DgroupId=mg.razherana.framework -DartifactId=framework -Dversion=1.0 -Dpackaging=jar &&
+        mvn install:install-file -Dfile=/app/src/main/webapp/WEB-INF/lib/lorm-1.0.0.jar -DgroupId=mg.razherana -DartifactId=lorm -Dversion=1.0.0 -Dpackaging=jar &&
+        mvn clean package -PalternateBuildDir -DskipTests
+      "
+    networks:
+      - frontoffice_network
+
+volumes:
+  maven-repo:
+
+networks:
+  frontoffice_network:
+    driver: bridge
