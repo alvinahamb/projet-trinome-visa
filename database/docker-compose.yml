@@ -1,0 +1,73 @@
+services:
+  db:
+    image: postgres:16.2
+    environment:
+      POSTGRES_DB: db_visa
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    networks:
+      - visa_network
+
+  flyway_dev:
+    restart: "no"
+    image: flyway/flyway
+    profiles: ["dev"]
+    depends_on:
+      - db
+    command: >
+      -url=jdbc:postgresql://db:5432/db_visa
+      -user=postgres
+      -password=postgres
+      -schemas=dev
+      -locations=filesystem:/flyway/sql/dev
+      -connectRetries=60
+      migrate
+    volumes:
+      - ./visa_database:/flyway/sql
+    networks:
+      - visa_network
+
+  flyway_staging:
+    restart: "no"
+    image: flyway/flyway
+    profiles: ["staging"]
+    depends_on:
+      - db
+    command: >
+      -url=jdbc:postgresql://db:5432/db_visa
+      -user=postgres
+      -password=postgres
+      -schemas=staging
+      -locations=filesystem:/flyway/sql/staging
+      -connectRetries=60
+      migrate
+    volumes:
+      - ./visa_database:/flyway/sql
+    networks:
+      - visa_network
+
+  flyway_release:
+    restart: "no"
+    image: flyway/flyway
+    profiles: ["release"]
+    depends_on:
+      - db
+    command: >
+      -url=jdbc:postgresql://db:5432/db_visa
+      -user=postgres
+      -password=postgres
+      -schemas=release
+      -locations=filesystem:/flyway/sql/script,filesystem:/flyway/sql/release
+      -connectRetries=60
+      migrate
+    volumes:
+      - ./visa_database:/flyway/sql
+    networks:
+      - visa_network
+
+networks:
+  visa_network:
+    name: visa_network
+    driver: bridge
