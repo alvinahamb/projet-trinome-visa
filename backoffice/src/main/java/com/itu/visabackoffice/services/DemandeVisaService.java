@@ -1,11 +1,24 @@
 import com.itu.visabackoffice.dto.DonneesDemandeVisaDTO;
 import com.itu.visabackoffice.dto.DemandeVisaSaisieDTO;
-import *;
-import com.itu.visabackoffice.repositories.*;
+import com.itu.visabackoffice.models.*;
+import com.itu.visabackoffice.repositories.GenreRepository;
+import com.itu.visabackoffice.repositories.SituationFamilialeRepository;
+import com.itu.visabackoffice.repositories.VisaTypeRepository;
+import com.itu.visabackoffice.repositories.PieceJustificativeRepository;
+import com.itu.visabackoffice.repositories.DemandeurRepository;
+import com.itu.visabackoffice.repositories.PasseportRepository;
+import com.itu.visabackoffice.repositories.VisaTransformableRepository;
+import com.itu.visabackoffice.repositories.DemandeRepository;
+import com.itu.visabackoffice.repositories.DemandePieceJustificativeRepository;
+import com.itu.visabackoffice.repositories.StatutDemandeRepository;
+import com.itu.visabackoffice.repositories.HistoriqueStatutDemandeRepository;
+import com.itu.visabackoffice.repositories.DemandeTypeRepository;
+import com.itu.visabackoffice.repositories.NationaliteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import java.util.Objects;
+import java.time.LocalDate;
 
 @Service
 @Slf4j
@@ -37,6 +50,18 @@ public class DemandeVisaService {
     
     @Autowired
     private DemandePieceJustificativeRepository demandePieceJustificativeRepository;
+    
+    @Autowired
+    private StatutDemandeRepository statutDemandeRepository;
+    
+    @Autowired
+    private HistoriqueStatutDemandeRepository historiqueStatutDemandeRepository;
+    
+    @Autowired
+    private DemandeTypeRepository demandeTypeRepository;
+    
+    @Autowired
+    private NationaliteRepository nationaliteRepository;
     
     /**
      * Récupère toutes les données nécessaires pour une demande de visa
@@ -77,6 +102,10 @@ public class DemandeVisaService {
             var typesVisa = visaTypeRepository.findAll();
             log.info("[INFO] {} type(s) de visa récupéré(s)", typesVisa.size());
             
+            log.info("[INFO] Récupération de toutes les nationalités");
+            var nationalites = nationaliteRepository.findAll();
+            log.info("[INFO] {} nationalité(s) récupérée(s)", nationalites.size());
+            
             log.info("[INFO] Récupération de toutes les pièces justificatives");
             var piecesJustificatives = pieceJustificativeRepository.findAll();
             log.info("[INFO] {} pièce(s) justificative(s) récupérée(s)", piecesJustificatives.size());
@@ -84,6 +113,7 @@ public class DemandeVisaService {
             DonneesDemandeVisaDTO donnees = DonneesDemandeVisaDTO.builder()
                     .genres(genres)
                     .situationsFamiliales(situationsFamiliales)
+                    .nationalites(nationalites)
                     .typesVisa(typesVisa)
                     .piecesJustificatives(piecesJustificatives)
                     .build();
@@ -147,6 +177,14 @@ public class DemandeVisaService {
                 throw new IllegalArgumentException("Le type de visa est obligatoire");
             }
             
+            // Validation des dates du passeport
+            if (demandeSaisie.getDateExpiration() != null && demandeSaisie.getDateDelivrance() != null) {
+                if (demandeSaisie.getDateExpiration().isBefore(demandeSaisie.getDateDelivrance())) {
+                    log.error("La date d'expiration du passeport est antérieure à la date de délivrance");
+                    throw new IllegalArgumentException("La date d'expiration doit être postérieure à la date de délivrance");
+                }
+            }
+            
             log.info("Validation réussie");
             
             // ========== CRÉATION DES OBJETS SANS PERSISTENCE ==========
@@ -155,10 +193,19 @@ public class DemandeVisaService {
             // 1. Créer le Demandeur
             log.info("Création objet Demandeur: {} {}", demandeSaisie.getNom(), demandeSaisie.getPrenom());
             
-            // Récupérer Genre depuis la DB
+            // Récupérer Genre et Nationalite depuis la DB
             Genre genre = genreRepository.findById(demandeSaisie.getGenre())
                     .orElseThrow(() -> new IllegalArgumentException("Genre non trouvé avec l'ID: " + demandeSaisie.getGenre()));
             log.info("Genre trouvé: {}", genre.getId());
+            
+            // Récupérer Nationalite
+            if (demandeSaisie.getNationalite() == null) {
+                log.error("La nationalité est manquante");
+                throw new IllegalArgumentException("La nationalité est obligatoire");
+            }
+            Nationalite nationalite = nationaliteRepository.findById(demandeSaisie.getNationalite())
+                    .orElseThrow(() -> new IllegalArgumentException("Nationalité non trouvée avec l'ID: " + demandeSaisie.getNationalite()));
+            log.info("Nationalité trouvée: {}", nationalite.getId());
             
             // Récupérer SituationFamiliale (optionnelle)
             SituationFamiliale situationFamiliale = situationFamilialeRepository.findById(demandeSaisie.getSituationFamiliale())
@@ -173,6 +220,7 @@ public class DemandeVisaService {
             demandeur.setNom(demandeSaisie.getNom());
             demandeur.setPrenom(demandeSaisie.getPrenom());
             demandeur.setGenre(genre);
+            demandeur.setNationalite(nationalite);
             demandeur.setDateNaissance(demandeSaisie.getDateNaissance());
             demandeur.setLieuNaissance(demandeSaisie.getLieuNaissance());
             demandeur.setTelephone(demandeSaisie.getTelephone());
@@ -198,7 +246,13 @@ public class DemandeVisaService {
             visaTransformable.setDateFin(demandeSaisie.getDateFin());
             visaTransformable.setLieuEntree(demandeSaisie.getLieuEntree());
             
-            // 4. Créer la Demande
+            // 4. Récupérer DemandeType (par défaut : id = 1)
+            log.info("Récupération type de demande");
+            DemandeType demandeType = demandeTypeRepository.findById(1)
+                    .orElseThrow(() -> new IllegalArgumentException("Type de demande par défaut non trouvé"));
+            log.info("Type de demande trouvé: {}", demandeType.getId());
+            
+            // 5. Créer la Demande
             log.info("Création objet Demande");
             Demande demande = new Demande();
             
@@ -232,11 +286,22 @@ public class DemandeVisaService {
             // Sauvegarder Demande et setter les FK
             log.info("Sauvegarde Demande");
             demande.setDemandeur(demandeur);
-            demande.setPasseport(passeport);
-            demande.setVisaTransformable(visaTransformable);
             demande.setVisaType(visaType);
+            demande.setTypeDemande(demandeType);
             demande = demandeRepository.save(demande);
             log.info("Demande sauvegardée avec l'ID: {}", demande.getId());
+            
+            // ========== CRÉATION DE L'HISTORIQUE STATUT ==========
+            log.info("Création de l'historique statut initial");
+            StatutDemande statutInitial = statutDemandeRepository.findById(1)
+                    .orElseThrow(() -> new IllegalArgumentException("Statut initial (id=1) non trouvé"));
+            
+            HistoriqueStatutDemande historique = new HistoriqueStatutDemande();
+            historique.setDemande(demande);
+            historique.setStatutDemande(statutInitial);
+            historique.setCommentaire("Demande créée");
+            historiqueStatutDemandeRepository.save(historique);
+            log.info("Historique statut créé avec succès");
             
             // Sauvegarder les DemandePieceJustificative
             if (demandeSaisie.getPieces() != null && !demandeSaisie.getPieces().isEmpty()) {
@@ -245,10 +310,15 @@ public class DemandeVisaService {
                     PieceJustificative pieceJustificative = pieceJustificativeRepository.findById(pieceId)
                             .orElseThrow(() -> new IllegalArgumentException("Pièce justificative non trouvée avec l'ID: " + pieceId));
                     
+                    // Vérifier que la pièce est bien associée au type de visa demandé
+                    if (!pieceJustificative.getTypeVisa().getId().equals(visaType.getId())) {
+                        log.warn("Pièce justificative {} n'est pas associée au type de visa {}", pieceId, visaType.getId());
+                        throw new IllegalArgumentException("La pièce justificative (id: " + pieceId + ") n'est pas valide pour le type de visa sélectionné");
+                    }
+                    
                     DemandePieceJustificative demandePiece = new DemandePieceJustificative();
                     demandePiece.setDemande(demande);
                     demandePiece.setPieceJustificative(pieceJustificative);
-                    demandePiece.setVisaType(visaType);
                     demandePieceJustificativeRepository.save(demandePiece);
                     log.info("Pièce justificative {} associée à la demande", pieceId);
                 }

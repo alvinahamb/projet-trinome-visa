@@ -65,6 +65,14 @@
         </div>
 
         <div class="form-group">
+            <label for="nationalite">Nationalité:</label>
+            <input type="text" id="nationalite" name="nationalite" list="nationalitesList" required>
+            <datalist id="nationalitesList">
+                <!-- Les nationalités seront ajoutées dynamiquement ici -->
+            </datalist>
+        </div>
+
+        <div class="form-group">
             <label for="situationFamiliale">Situation familiale:</label>
             <select id="situationFamiliale" name="situationFamiliale" required>
                 <option value="">Sélectionnez</option>
@@ -159,6 +167,9 @@
             // Remplir les genres
             remplirSelect('genre', donneesFormulaire.genres);
 
+            // Remplir la datalist des nationalités
+            remplirDatalist('nationalitesList', donneesFormulaire.nationalites);
+
             // Remplir les situations familiales
             remplirSelect('situationFamiliale', donneesFormulaire.situationsFamiliales);
 
@@ -177,6 +188,17 @@
                 option.value = item.id;
                 option.textContent = item.libelle || item.nom || item.nomVisa || item.designation;
                 select.appendChild(option);
+            });
+        }
+
+        // Fonction pour remplir une datalist
+        function remplirDatalist(datalistId, donnees) {
+            const datalist = document.getElementById(datalistId);
+            donnees.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.libelle || item.nom;
+                datalist.appendChild(option);
             });
         }
 

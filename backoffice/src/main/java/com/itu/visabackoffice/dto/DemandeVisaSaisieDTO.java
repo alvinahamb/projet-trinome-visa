@@ -22,6 +22,7 @@ public class DemandeVisaSaisieDTO {
     private String telephone;
     private String email;
     private String adresse;
+    private Integer nationalite;
     private Integer situationFamiliale;
     
     // Passeport
