@@ -69,7 +69,7 @@ public class DemandeVisaRestController {
     try {
       log.info("Création demande visa - Demandeur: {} {}", demandeSaisie.getNom(), demandeSaisie.getPrenom());
       
-      Object resultat = demandeVisaService.creerDemandeVisa(demandeSaisie);
+      Object resultat = demandeVisaService.enregistrerDemandeVisa(demandeSaisie);
       
       ApiResponse<Object> response = ApiResponse.success(
           resultat,
