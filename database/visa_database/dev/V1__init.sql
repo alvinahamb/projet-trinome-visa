@@ -21,13 +21,13 @@ CREATE TABLE genres (
     libelle                  VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE types_visas (
-    id_type_visa             SERIAL PRIMARY KEY,
+CREATE TABLE visa_types (
+    id_visa_type             SERIAL PRIMARY KEY,
     libelle                  VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE types_demandes (
-    id_type_demande          SERIAL PRIMARY KEY,
+CREATE TABLE demande_types (
+    id_demande_type          SERIAL PRIMARY KEY,
     code                     VARCHAR(50) NOT NULL UNIQUE,
     description              TEXT
 );
@@ -39,7 +39,11 @@ CREATE TABLE statuts_demandes (
 
 CREATE TABLE pieces_justificatives (
     id_piece_justificative   SERIAL PRIMARY KEY,
-    libelle                  VARCHAR(150) NOT NULL
+    libelle                  VARCHAR(150) NOT NULL, 
+    visa_types_id            INT NOT NULL,
+    CONSTRAINT fk_pieces_justificatives_visa_types
+        FOREIGN KEY (visa_types_id)
+        REFERENCES visa_types(id_visa_type)
 );
 
 -- =========================
@@ -77,6 +81,7 @@ CREATE TABLE visas_transformables (
     date_entree              DATE,
     date_fin                 DATE,
 
+    reference               VARCHAR(100) NOT NULL UNIQUE,
     lieu_entree              VARCHAR(150)
 );
 
@@ -116,13 +121,13 @@ CREATE TABLE demandes (
         FOREIGN KEY (demandeur_id)
         REFERENCES demandeurs(id_demandeur),
 
-    CONSTRAINT fk_demandes_type_visa
+    CONSTRAINT fk_demandes_visa_type
         FOREIGN KEY (type_visa_id)
-        REFERENCES types_visas(id_type_visa),
+        REFERENCES visa_types(id_visa_type),
 
-    CONSTRAINT fk_demandes_type_demande
+    CONSTRAINT fk_demandes_demande_type
         FOREIGN KEY (type_demande_id)
-        REFERENCES types_demandes(id_type_demande)
+        REFERENCES demande_types(id_demande_type)
 );
 
 -- =========================

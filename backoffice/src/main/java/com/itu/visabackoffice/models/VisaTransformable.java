@@ -18,6 +18,9 @@ public class VisaTransformable {
     @Column(name = "id_visa_transformable")
     private Integer id;
 
+    @Column(name = "reference", nullable = false, unique = true, length = 100)
+    private String reference;
+
     @Column(name = "date_entree")
     private LocalDate dateEntree;
 
