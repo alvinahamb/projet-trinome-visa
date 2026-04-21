@@ -33,8 +33,4 @@ public class Passeport {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "demandeur_id", nullable = false)
     private Demandeur demandeur;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "visa_transformable_id")
-    private VisaTransformable visaTransformable;
 }

@@ -29,4 +29,8 @@ public class VisaTransformable {
 
     @Column(name = "lieu_entree", length = 150)
     private String lieuEntree;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "demandeur_id")
+    private Demandeur demandeur;
 }

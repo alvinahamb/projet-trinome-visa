@@ -52,8 +52,15 @@ public class Demandeur {
     @JoinColumn(name = "genre_id", nullable = false)
     private Genre genre;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "situation_familiale_id")
+    private SituationFamiliale situationFamiliale;
+
     @OneToMany(mappedBy = "demandeur", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Passeport> passeports;
+
+    @OneToMany(mappedBy = "demandeur", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<VisaTransformable> visasTransformables;
 
     @OneToMany(mappedBy = "demandeur", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Demande> demandes;
