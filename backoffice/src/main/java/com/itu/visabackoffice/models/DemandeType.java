@@ -6,17 +6,20 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "types_visas")
+@Table(name = "types_demandes")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TypeVisa {
+public class DemandeType {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_type_visa")
+    @Column(name = "id_type_demande")
     private Integer id;
 
-    @Column(name = "libelle", nullable = false, length = 100)
-    private String libelle;
+    @Column(name = "code", nullable = false, length = 50, unique = true)
+    private String code;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
 }

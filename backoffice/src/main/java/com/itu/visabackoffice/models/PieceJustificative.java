@@ -19,4 +19,8 @@ public class PieceJustificative {
 
     @Column(name = "libelle", nullable = false, length = 150)
     private String libelle;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "types_visas_id", nullable = false)
+    private VisaType typeVisa;
 }

@@ -31,11 +31,11 @@ public class Demande {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "type_visa_id", nullable = false)
-    private TypeVisa typeVisa;
+    private VisaType typeVisa;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "type_demande_id", nullable = false)
-    private TypeDemande typeDemande;
+    private DemandeType typeDemande;
 
     @OneToMany(mappedBy = "demande", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<DemandePieceJustificative> pieceJustificatives;
