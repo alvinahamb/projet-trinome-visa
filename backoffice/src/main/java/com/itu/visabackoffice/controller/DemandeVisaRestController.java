@@ -20,14 +20,14 @@ public class DemandeVisaRestController {
   private DemandeVisaService demandeVisaService;
 
   @GetMapping("/demande-saisie-form")
-  public ResponseEntity<ApiResponse<DonneesDemandeVisaDTO>> getDonneesDemandeVisa() {
+  public ResponseEntity<ApiResponse<DonneesDemandeVisaDTO>> demandeVisaSaisie() {
     try {
-      log.info("Récupération données demande visa");
+      log.info("Récupération données formulaire demande visa");
       DonneesDemandeVisaDTO donnees = demandeVisaService.getDonneesDemandeVisa();
       
       ApiResponse<DonneesDemandeVisaDTO> response = ApiResponse.success(
           donnees, 
-          "Toutes les données de demande de visa ont été récupérées avec succès"
+          "Données formulaire chargées avec succès"
       );
       
       return ResponseEntity.ok(response);
@@ -38,7 +38,7 @@ public class DemandeVisaRestController {
       ApiResponse<DonneesDemandeVisaDTO> response = ApiResponse.error(
           500,
           e.getMessage(),
-          "Une erreur est survenue lors de la récupération des données"
+          "Une erreur est survenue lors du chargement du formulaire"
       );
       
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);

@@ -10,4 +10,5 @@ import java.util.List;
 public interface DemandePieceJustificativeRepository extends JpaRepository<DemandePieceJustificative, Integer> {
     List<DemandePieceJustificative> findByDemandeId(Integer demandeId);
     List<DemandePieceJustificative> findByPieceJustificativeId(Integer pieceJustificativeId);
+    List<DemandePieceJustificative> findByVisaTypeId(Integer visaTypeId);
 }
