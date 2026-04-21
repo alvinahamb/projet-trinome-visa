@@ -58,6 +58,7 @@ CREATE TABLE demandeurs (
 
     nationalite_id           INT NOT NULL,
     genre_id                 INT NOT NULL,
+    situation_familiale_id   INT,
 
     nom                      VARCHAR(100) NOT NULL,
     prenom                   VARCHAR(100) NOT NULL,
@@ -72,7 +73,11 @@ CREATE TABLE demandeurs (
 
     CONSTRAINT fk_demandeurs_genre
         FOREIGN KEY (genre_id)
-        REFERENCES genres(id_genre)
+        REFERENCES genres(id_genre),
+    
+    CONSTRAINT fk_demandeurs_situation_familiale
+        FOREIGN KEY (situation_familiale_id)
+        REFERENCES situations_familiales(id_situation_familiale)
 );
 
 CREATE TABLE visas_transformables (
@@ -80,9 +85,14 @@ CREATE TABLE visas_transformables (
 
     date_entree              DATE,
     date_fin                 DATE,
+    demandeur_id             INT,
 
-    reference               VARCHAR(100) NOT NULL UNIQUE,
-    lieu_entree              VARCHAR(150)
+    reference                VARCHAR(100) NOT NULL UNIQUE,
+    lieu_entree              VARCHAR(150),
+
+    CONSTRAINT fk_visas_transformables_demandeur
+        FOREIGN KEY (demandeur_id)
+        REFERENCES demandeurs(id_demandeur)
 );
 
 CREATE TABLE passeports (
@@ -90,20 +100,14 @@ CREATE TABLE passeports (
 
     date_delivrance          DATE NOT NULL,
     date_expiration          DATE NOT NULL,
-
     demandeur_id             INT NOT NULL,
-    visa_transformable_id    INT,
 
     numero                   VARCHAR(100) NOT NULL UNIQUE,
     pays_delivrance          VARCHAR(100),
 
     CONSTRAINT fk_passeports_demandeur
         FOREIGN KEY (demandeur_id)
-        REFERENCES demandeurs(id_demandeur),
-
-    CONSTRAINT fk_passeports_visa_transformable
-        FOREIGN KEY (visa_transformable_id)
-        REFERENCES visas_transformables(id_visa_transformable)
+        REFERENCES demandeurs(id_demandeur)
 );
 
 CREATE TABLE demandes (
