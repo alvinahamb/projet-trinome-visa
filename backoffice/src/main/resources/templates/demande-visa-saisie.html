@@ -1,80 +1,227 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Demande de VISA</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        h1 { color: #333; }
+        h2 { color: #666; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .pieces-container { margin-left: 20px; }
+        .piece-item { margin: 10px 0; }
+        button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+    </style>
 </head>
 <body>
-    <h1>Demande de enregistrement de VISA</h1>
-    <form th:action="@{/demande-visa-saisie}" method="post">
-        <h2>Etat civil</h2>
-        <label for="nom">Nom:</label>
-        <input type="text" id="nom" name="nom" required><br><br>
+    <h1>Demande d'enregistrement de VISA</h1>
+    <form id="demandeVisaForm" method="post">
+        
+        <h2>État civil</h2>
+        <div class="form-group">
+            <label for="nom">Nom:</label>
+            <input type="text" id="nom" name="nom" required>
+        </div>
 
-        <label for="prenom">Prénom:</label>
-        <input type="text" id="prenom" name="prenom" required><br><br>
+        <div class="form-group">
+            <label for="prenom">Prénom:</label>
+            <input type="text" id="prenom" name="prenom" required>
+        </div>
 
-        <label for="genre">Genre:</label>
-        <select id="genre" name="genre" required>
-            <option value="">Sélectionnez</option>
-        </select><br><br>
+        <div class="form-group">
+            <label for="genre">Genre:</label>
+            <select id="genre" name="genre" required>
+                <option value="">Sélectionnez</option>
+            </select>
+        </div>
 
-        <label for="dateNaissance">Date de naissance:</label>
-        <input type="date" id="dateNaissance" name="dateNaissance" required><br><br>
+        <div class="form-group">
+            <label for="dateNaissance">Date de naissance:</label>
+            <input type="date" id="dateNaissance" name="dateNaissance" required>
+        </div>
 
-        <label for="paysOrigine">Lieu de naissance:</label>
-        <input type="text" id="lieuNaissance" name="lieuNaissance" required><br><br>
+        <div class="form-group">
+            <label for="lieuNaissance">Lieu de naissance:</label>
+            <input type="text" id="lieuNaissance" name="lieuNaissance" required>
+        </div>
 
-        <label for="telephone">Téléphone:</label>
-        <input type="tel" id="telephone" name="telephone" required><br><br>
+        <div class="form-group">
+            <label for="telephone">Téléphone:</label>
+            <input type="tel" id="telephone" name="telephone" required>
+        </div>
 
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required><br><br>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
 
-        <label for="adresse">Adresse:</label>
-        <input type="text" id="adresse" name="adresse" required><br><br>
+        <div class="form-group">
+            <label for="adresse">Adresse:</label>
+            <input type="text" id="adresse" name="adresse" required>
+        </div>
 
-        <label for="nationalite">Nationalité:</label>
-        <input type="datalist" id="nationalite" name="nationalite" required><br><br>
-        <datalist id="nationalite">
-            <option value="Autre">
-        </datalist><br><br>
-
+        <div class="form-group">
+            <label for="situationFamiliale">Situation familiale:</label>
+            <select id="situationFamiliale" name="situationFamiliale" required>
+                <option value="">Sélectionnez</option>
+            </select>
+        </div>
 
         <h2>Passeport</h2>
-        <label for="numero">Numéro du passeport:</label>
-        <input type="text" id="numero" name="numero" required><br><br>
+        <div class="form-group">
+            <label for="numeroPasseport">Numéro du passeport:</label>
+            <input type="text" id="numeroPasseport" name="numeroPasseport" required>
+        </div>
 
-        <label for="dateDelivrance">Date de délivrance:</label>
-        <input type="date" id="dateDelivrance" name="dateDelivrance" required><br><br>
+        <div class="form-group">
+            <label for="dateDelivrance">Date de délivrance:</label>
+            <input type="date" id="dateDelivrance" name="dateDelivrance" required>
+        </div>
 
-        <label for="dateExpiration">Date d'expiration:</label>
-        <input type="date" id="dateExpiration" name="dateExpiration" required><br><br>
+        <div class="form-group">
+            <label for="dateExpiration">Date d'expiration:</label>
+            <input type="date" id="dateExpiration" name="dateExpiration" required>
+        </div>
 
-        <label for="paysDelivrance">Pays de délivrance:</label>
-        <input type="text" id="paysDelivrance" name="paysDelivrance" required><br><br>
-
+        <div class="form-group">
+            <label for="paysDelivrance">Pays de délivrance:</label>
+            <input type="text" id="paysDelivrance" name="paysDelivrance" required>
+        </div>
 
         <h2>Visa transformable actuel</h2>
-        <label for="reference">Reference:</label>
-        <input type="text" id="reference" name="reference" required><br><br>
+        <div class="form-group">
+            <label for="referenceVisa">Référence:</label>
+            <input type="text" id="referenceVisa" name="referenceVisa" required>
+        </div>
 
-        <label for="dateEntree">Date d'entrée:</label>
-        <input type="date" id="dateEntree" name="dateEntree" required><br><br>
+        <div class="form-group">
+            <label for="dateEntree">Date d'entrée:</label>
+            <input type="date" id="dateEntree" name="dateEntree" required>
+        </div>
 
-        <label for="dateFin">Date de fin:</label>
-        <input type="date" id="dateFin" name="dateFin" required><br><br>
+        <div class="form-group">
+            <label for="dateFin">Date de fin:</label>
+            <input type="date" id="dateFin" name="dateFin" required>
+        </div>
 
-        <label for="lieuEntree">Lieu d'entrée:</label>
-        <input type="text" id="lieuEntree" name="lieuEntee" required><br><br>
+        <div class="form-group">
+            <label for="lieuEntree">Lieu d'entrée:</label>
+            <input type="text" id="lieuEntree" name="lieuEntree" required>
+        </div>
 
-        <h2>Type Visa demande</h2>
-        <label for="visaType">Type de visa demandé:</label>
-        <select id="visaType" name="visaType" required>
-            <option value="">Sélectionnez</option>
-        </select><br><br>
+        <h2>Type de Visa demandé</h2>
+        <div class="form-group">
+            <label for="visaType">Type de visa demandé:</label>
+            <select id="visaType" name="visaType" required>
+                <option value="">Sélectionnez</option>
+            </select>
+        </div>
+
+        <h2>Pièces justificatives requises</h2>
+        <div id="piecesContainer" class="pieces-container">
+            <!-- Les pièces seront ajoutées dynamiquement ici -->
+        </div>
 
         <button type="submit">Enregistrer</button>    
+    </form>
+
+    <script src="/js/callApi.js"></script>
+    <script>
+        // Stockage des données
+        let donneesFormulaire = {};
+
+        // Charger les données au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            chargerDonneesFormulaire();
+        });
+
+        // Charger toutes les données du formulaire en une seule requête
+        function chargerDonneesFormulaire() {
+            getApi('/demande-visa/demande-saisie-form')
+                .then(response => {
+                    if (response.status === 'success') {
+                        donneesFormulaire = response.data;
+                        remplirFormulaire();
+                    } else {
+                        console.error('Erreur:', response.error);
+                        alert('Erreur: ' + response.message);
+                    }
+                })
+                .catch(error => console.error('Erreur réseau:', error));
+        }
+
+        // Remplir les selects du formulaire
+        function remplirFormulaire() {
+            // Remplir les genres
+            remplirSelect('genre', donneesFormulaire.genres);
+
+            // Remplir les situations familiales
+            remplirSelect('situationFamiliale', donneesFormulaire.situationsFamiliales);
+
+            // Remplir les types de visa
+            remplirSelect('visaType', donneesFormulaire.typesVisa);
+
+            // Ajouter l'événement de changement du type de visa
+            document.getElementById('visaType').addEventListener('change', afficherPiecesParTypeVisa);
+        }
+
+        // Fonction générique pour remplir un select
+        function remplirSelect(selectId, donnees) {
+            const select = document.getElementById(selectId);
+            donnees.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.libelle || item.nom || item.nomVisa || item.designation;
+                select.appendChild(option);
+            });
+        }
+
+        // Afficher les pièces justificatives selon le type de visa sélectionné
+        function afficherPiecesParTypeVisa() {
+            const visaTypeId = document.getElementById('visaType').value;
+            const piecesContainer = document.getElementById('piecesContainer');
+            
+            // Vider le conteneur
+            piecesContainer.innerHTML = '';
+
+            if (!visaTypeId) {
+                piecesContainer.innerHTML = '<p>Sélectionnez un type de visa pour voir les pièces requises</p>';
+                return;
+            }
+
+            // Afficher toutes les pièces justificatives en checkboxes
+            if (donneesFormulaire.piecesJustificatives.length === 0) {
+                piecesContainer.innerHTML = '<p>Aucune pièce disponible</p>';
+                return;
+            }
+
+            // Créer les checkboxes pour chaque pièce
+            donneesFormulaire.piecesJustificatives.forEach(piece => {
+                const div = document.createElement('div');
+                div.className = 'piece-item';
+                
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.id = 'piece_' + piece.id;
+                input.name = 'pieces';
+                input.value = piece.id;
+                
+                const label = document.createElement('label');
+                label.htmlFor = 'piece_' + piece.id;
+                label.textContent = piece.designation || piece.nom;
+                label.style.display = 'inline';
+                label.style.fontWeight = 'normal';
+                label.style.marginLeft = '5px';
+                
+                div.appendChild(input);
+                div.appendChild(label);
+                piecesContainer.appendChild(div);
+            });
+        }
+    </script>
 </body>
 </html>
