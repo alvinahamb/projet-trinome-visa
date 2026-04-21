@@ -1,8 +1,7 @@
 import com.itu.visabackoffice.dto.DonneesDemandeVisaDTO;
-import com.itu.visabackoffice.repositories.GenreRepository;
-import com.itu.visabackoffice.repositories.SituationFamilialeRepository;
-import com.itu.visabackoffice.repositories.VisaTypeRepository;
-import com.itu.visabackoffice.repositories.PieceJustificativeRepository;
+import com.itu.visabackoffice.dto.DemandeVisaSaisieDTO;
+import *;
+import com.itu.visabackoffice.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +22,21 @@ public class DemandeVisaService {
     
     @Autowired
     private PieceJustificativeRepository pieceJustificativeRepository;
+    
+    @Autowired
+    private DemandeurRepository demandeurRepository;
+    
+    @Autowired
+    private PasseportRepository passeportRepository;
+    
+    @Autowired
+    private VisaTransformableRepository visaTransformableRepository;
+    
+    @Autowired
+    private DemandeRepository demandeRepository;
+    
+    @Autowired
+    private DemandePieceJustificativeRepository demandePieceJustificativeRepository;
     
     /**
      * Récupère toutes les données nécessaires pour une demande de visa
@@ -92,6 +106,166 @@ public class DemandeVisaService {
             log.error("[ERROR] Type d'erreur: {}", e.getClass().getName());
             log.error("[ERROR] StackTrace:", e);
             throw new RuntimeException("Erreur lors de la récupération des données: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Enregistre une nouvelle demande de visa avec tous les objets associés
+     * @param demandeSaisie les données saisies du formulaire
+     * @return Demande créée
+     * @throws RuntimeException en cas d'erreur
+     */
+    public Demande enregistrerDemandeVisa(DemandeVisaSaisieDTO demandeSaisie) {
+        log.info("Début enregistrement demande visa - Demandeur: {} {}", demandeSaisie.getNom(), demandeSaisie.getPrenom());
+        
+        try {
+            // ========== VALIDATION DES DONNÉES ==========
+            log.info("Validation des données de la demande");
+            
+            if (demandeSaisie.getNom() == null || demandeSaisie.getNom().isEmpty()) {
+                log.error("Le nom est manquant");
+                throw new IllegalArgumentException("Le nom est obligatoire");
+            }
+            
+            if (demandeSaisie.getPrenom() == null || demandeSaisie.getPrenom().isEmpty()) {
+                log.error("Le prénom est manquant");
+                throw new IllegalArgumentException("Le prénom est obligatoire");
+            }
+            
+            if (demandeSaisie.getGenre() == null) {
+                log.error("Le genre est manquant");
+                throw new IllegalArgumentException("Le genre est obligatoire");
+            }
+            
+            if (demandeSaisie.getDateNaissance() == null) {
+                log.error("La date de naissance est manquante");
+                throw new IllegalArgumentException("La date de naissance est obligatoire");
+            }
+            
+            if (demandeSaisie.getVisaType() == null) {
+                log.error("Le type de visa est manquant");
+                throw new IllegalArgumentException("Le type de visa est obligatoire");
+            }
+            
+            log.info("Validation réussie");
+            
+            // ========== CRÉATION DES OBJETS SANS PERSISTENCE ==========
+            log.info("Création des objets entité");
+            
+            // 1. Créer le Demandeur
+            log.info("Création objet Demandeur: {} {}", demandeSaisie.getNom(), demandeSaisie.getPrenom());
+            
+            // Récupérer Genre depuis la DB
+            Genre genre = genreRepository.findById(demandeSaisie.getGenre())
+                    .orElseThrow(() -> new IllegalArgumentException("Genre non trouvé avec l'ID: " + demandeSaisie.getGenre()));
+            log.info("Genre trouvé: {}", genre.getId());
+            
+            // Récupérer SituationFamiliale (optionnelle)
+            SituationFamiliale situationFamiliale = situationFamilialeRepository.findById(demandeSaisie.getSituationFamiliale())
+                    .orElse(null);
+            if (situationFamiliale != null) {
+                log.info("Situation familiale trouvée: {}", situationFamiliale.getId());
+            } else {
+                log.warn("Aucune situation familiale sélectionnée");
+            }
+            
+            Demandeur demandeur = new Demandeur();
+            demandeur.setNom(demandeSaisie.getNom());
+            demandeur.setPrenom(demandeSaisie.getPrenom());
+            demandeur.setGenre(genre);
+            demandeur.setDateNaissance(demandeSaisie.getDateNaissance());
+            demandeur.setLieuNaissance(demandeSaisie.getLieuNaissance());
+            demandeur.setTelephone(demandeSaisie.getTelephone());
+            demandeur.setEmail(demandeSaisie.getEmail());
+            demandeur.setAdresse(demandeSaisie.getAdresse());
+            if (situationFamiliale != null) {
+                demandeur.setSituationFamiliale(situationFamiliale);
+            }
+            
+            // 2. Créer le Passeport
+            log.info("Création objet Passeport");
+            Passeport passeport = new Passeport();
+            passeport.setNumero(demandeSaisie.getNumeroPasseport());
+            passeport.setDateDelivrance(demandeSaisie.getDateDelivrance());
+            passeport.setDateExpiration(demandeSaisie.getDateExpiration());
+            passeport.setPaysDelivrance(demandeSaisie.getPaysDelivrance());
+            
+            // 3. Créer le Visa Transformable
+            log.info("Création objet VisaTransformable");
+            VisaTransformable visaTransformable = new VisaTransformable();
+            visaTransformable.setReference(demandeSaisie.getReferenceVisa());
+            visaTransformable.setDateEntree(demandeSaisie.getDateEntree());
+            visaTransformable.setDateFin(demandeSaisie.getDateFin());
+            visaTransformable.setLieuEntree(demandeSaisie.getLieuEntree());
+            
+            // 4. Créer la Demande
+            log.info("Création objet Demande");
+            Demande demande = new Demande();
+            
+            log.info("Objets créés avec succès (sans persistence)");
+            
+            // ========== PERSISTENCE DES OBJETS ==========
+            log.info("Début de la persistence des objets");
+            
+            // Sauvegarder Demandeur
+            log.info("Sauvegarde Demandeur");
+            demandeur = demandeurRepository.save(demandeur);
+            log.info("Demandeur sauvegardé avec l'ID: {}", demandeur.getId());
+            
+            // Sauvegarder Passeport et setter la FK
+            log.info("Sauvegarde Passeport");
+            passeport.setDemandeur(demandeur);
+            passeport = passeportRepository.save(passeport);
+            log.info("Passeport sauvegardé avec l'ID: {}", passeport.getId());
+            
+            // Sauvegarder VisaTransformable et setter la FK
+            log.info("Sauvegarde VisaTransformable");
+            visaTransformable.setDemandeur(demandeur);
+            visaTransformable = visaTransformableRepository.save(visaTransformable);
+            log.info("VisaTransformable sauvegardé avec l'ID: {}", visaTransformable.getId());
+            
+            // Récupérer VisaType depuis la DB
+            VisaType visaType = visaTypeRepository.findById(demandeSaisie.getVisaType())
+                    .orElseThrow(() -> new IllegalArgumentException("Type de visa non trouvé avec l'ID: " + demandeSaisie.getVisaType()));
+            log.info("Type de visa trouvé: {}", visaType.getId());
+            
+            // Sauvegarder Demande et setter les FK
+            log.info("Sauvegarde Demande");
+            demande.setDemandeur(demandeur);
+            demande.setPasseport(passeport);
+            demande.setVisaTransformable(visaTransformable);
+            demande.setVisaType(visaType);
+            demande = demandeRepository.save(demande);
+            log.info("Demande sauvegardée avec l'ID: {}", demande.getId());
+            
+            // Sauvegarder les DemandePieceJustificative
+            if (demandeSaisie.getPieces() != null && !demandeSaisie.getPieces().isEmpty()) {
+                log.info("Sauvegarde des {} pièces justificatives", demandeSaisie.getPieces().size());
+                for (Integer pieceId : demandeSaisie.getPieces()) {
+                    PieceJustificative pieceJustificative = pieceJustificativeRepository.findById(pieceId)
+                            .orElseThrow(() -> new IllegalArgumentException("Pièce justificative non trouvée avec l'ID: " + pieceId));
+                    
+                    DemandePieceJustificative demandePiece = new DemandePieceJustificative();
+                    demandePiece.setDemande(demande);
+                    demandePiece.setPieceJustificative(pieceJustificative);
+                    demandePiece.setVisaType(visaType);
+                    demandePieceJustificativeRepository.save(demandePiece);
+                    log.info("Pièce justificative {} associée à la demande", pieceId);
+                }
+            } else {
+                log.warn("Aucune pièce justificative sélectionnée");
+            }
+            
+            log.info("Persistence réussie - Demande enregistrée avec succès");
+            return demande;
+            
+        } catch (IllegalArgumentException e) {
+            log.error("Erreur validation: {}", e.getMessage());
+            throw new RuntimeException("Erreur validation: " + e.getMessage(), e);
+            
+        } catch (Exception e) {
+            log.error("Erreur enregistrement demande: {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'enregistrement: " + e.getMessage(), e);
         }
     }
 }
