@@ -222,6 +222,37 @@
                 piecesContainer.appendChild(div);
             });
         }
+
+        // Soumettre le formulaire en POST
+        document.getElementById('demandeVisaForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Récupérer les données du formulaire
+            const formData = new FormData(this);
+            const donnees = Object.fromEntries(formData);
+
+            // Récupérer les pièces sélectionnées
+            const piecesSelectionnees = Array.from(document.querySelectorAll('input[name="pieces"]:checked'))
+                .map(checkbox => parseInt(checkbox.value));
+            donnees.pieces = piecesSelectionnees;
+
+            // Appel POST
+            postApi('/demande-visa/demande-saisie-ajout', donnees)
+                .then(response => {
+                    if (response.status === 'success') {
+                        alert('Demande enregistrée avec succès!');
+                        console.log('Réponse:', response.data);
+                        // Rediriger ou réinitialiser le formulaire si besoin
+                    } else {
+                        alert('Erreur: ' + response.message);
+                        console.error('Erreur:', response.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur réseau:', error);
+                    alert('Erreur lors de l\'enregistrement');
+                });
+        });
     </script>
 </body>
 </html>
