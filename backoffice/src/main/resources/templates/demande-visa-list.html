@@ -602,8 +602,24 @@
                     donnees.pieces = piecesSelectionnees;
                     
                     console.log('Données à enregistrer:', donnees);
-                    // À implémenter : appel API pour enregistrer les modifications
-                    alert('Enregistrement des modifications (à implémenter)');
+                    
+                    // Appel API pour enregistrer les modifications
+                    putApi(`/demande-visa/demande-update/${numero}`, donnees)
+                        .then(response => {
+                            if (response.status === 'success') {
+                                alert('Demande mise à jour avec succès!');
+                                annulerEdition(`demande_${numero}`);
+                                // Recharger les demandes
+                                chargerListeDemandes();
+                            } else {
+                                alert('Erreur: ' + response.message);
+                                console.error('Erreur:', response.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erreur réseau:', error);
+                            alert('Erreur lors de la mise à jour');
+                        });
                 });
             }
             

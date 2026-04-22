@@ -459,4 +459,150 @@ public class DemandeVisaService {
             throw new RuntimeException("Erreur conversion: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Met à jour une demande si son statut est "En attente" (id=1)
+     * @param demandeId l'ID de la demande à mettre à jour
+     * @param demandeDTO les nouvelles données
+     * @return la demande mise à jour
+     * @throws RuntimeException si le statut n'est pas "En attente" ou si erreur
+     */
+    public Demande updateDemandeVisa(Integer demandeId, DemandeVisaSaisieDTO demandeDTO) {
+        log.info("[INFO] Début de la mise à jour de la demande {}", demandeId);
+        
+        try {
+            // Vérifier que la demande existe
+            Demande demande = demandeRepository.findById(demandeId)
+                    .orElseThrow(() -> new IllegalArgumentException("Demande non trouvée avec l'ID: " + demandeId));
+            log.info("[INFO] Demande trouvée: {}", demandeId);
+            
+            // Vérifier que le statut est "En attente" (id = 1)
+            if (demande.getHistoriques() != null && !demande.getHistoriques().isEmpty()) {
+                HistoriqueStatutDemande dernierHistorique = demande.getHistoriques()
+                        .stream()
+                        .max((h1, h2) -> h1.getDateChangement().compareTo(h2.getDateChangement()))
+                        .orElse(null);
+                
+                if (dernierHistorique != null && dernierHistorique.getStatutDemande() != null) {
+                    Integer statutId = dernierHistorique.getStatutDemande().getId();
+                    if (!statutId.equals(1)) {
+                        log.warn("[WARNING] Tentative de modification avec statut != 1. Statut actuel: {}", statutId);
+                        throw new IllegalStateException("Seules les demandes avec le statut 'En attente' peuvent être modifiées");
+                    }
+                    log.info("[INFO] Statut valide pour modification (id=1)");
+                }
+            }
+            
+            // Récupérer et mettre à jour le Demandeur
+            Demandeur demandeur = demande.getDemandeur();
+            if (demandeur == null) {
+                throw new IllegalStateException("Demandeur non trouvé pour la demande " + demandeId);
+            }
+            
+            log.info("[INFO] Mise à jour des données du demandeur");
+            demandeur.setNom(demandeDTO.getNom());
+            demandeur.setPrenom(demandeDTO.getPrenom());
+            demandeur.setLieuNaissance(demandeDTO.getLieuNaissance());
+            demandeur.setTelephone(demandeDTO.getTelephone());
+            demandeur.setEmail(demandeDTO.getEmail());
+            demandeur.setAdresse(demandeDTO.getAdresse());
+            demandeur.setDateNaissance(demandeDTO.getDateNaissance());
+            
+            // Mettre à jour Genre si fourni
+            if (demandeDTO.getGenre() != null) {
+                Genre genre = genreRepository.findById(demandeDTO.getGenre())
+                        .orElseThrow(() -> new IllegalArgumentException("Genre non trouvé"));
+                demandeur.setGenre(genre);
+            }
+            
+            // Mettre à jour Nationalité si fourni
+            if (demandeDTO.getNationalite() != null) {
+                Nationalite nationalite = nationaliteRepository.findById(demandeDTO.getNationalite())
+                        .orElseThrow(() -> new IllegalArgumentException("Nationalité non trouvée"));
+                demandeur.setNationalite(nationalite);
+            }
+            
+            // Mettre à jour Situation Familiale si fourni
+            if (demandeDTO.getSituationFamiliale() != null) {
+                SituationFamiliale situationFamiliale = situationFamilialeRepository.findById(demandeDTO.getSituationFamiliale())
+                        .orElse(null);
+                demandeur.setSituationFamiliale(situationFamiliale);
+            }
+            
+            demandeur = demandeurRepository.save(demandeur);
+            log.info("[INFO] Demandeur mis à jour avec l'ID: {}", demandeur.getId());
+            
+            // Mettre à jour le Passeport
+            if (!demandeur.getPasseports().isEmpty()) {
+                Passeport passeport = demandeur.getPasseports().get(demandeur.getPasseports().size() - 1);
+                log.info("[INFO] Mise à jour du passeport");
+                passeport.setNumero(demandeDTO.getNumeroPasseport());
+                passeport.setDateDelivrance(demandeDTO.getDateDelivrance());
+                passeport.setDateExpiration(demandeDTO.getDateExpiration());
+                passeport.setPaysDelivrance(demandeDTO.getPaysDelivrance());
+                passeportRepository.save(passeport);
+                log.info("[INFO] Passeport mis à jour");
+            }
+            
+            // Mettre à jour le Visa Transformable
+            if (!demandeur.getVisasTransformables().isEmpty()) {
+                VisaTransformable visaTransformable = demandeur.getVisasTransformables().get(demandeur.getVisasTransformables().size() - 1);
+                log.info("[INFO] Mise à jour du visa transformable");
+                visaTransformable.setReference(demandeDTO.getReferenceVisa());
+                visaTransformable.setDateEntree(demandeDTO.getDateEntree());
+                visaTransformable.setDateFin(demandeDTO.getDateFin());
+                visaTransformable.setLieuEntree(demandeDTO.getLieuEntree());
+                visaTransformableRepository.save(visaTransformable);
+                log.info("[INFO] Visa transformable mis à jour");
+            }
+            
+            // Mettre à jour le type de visa si fourni
+            if (demandeDTO.getVisaType() != null) {
+                VisaType visaType = visaTypeRepository.findById(demandeDTO.getVisaType())
+                        .orElseThrow(() -> new IllegalArgumentException("Type de visa non trouvé"));
+                demande.setVisaType(visaType);
+                log.info("[INFO] Type de visa mis à jour");
+            }
+            
+            // Mettre à jour les pièces justificatives si fourni
+            if (demandeDTO.getPieces() != null && !demandeDTO.getPieces().isEmpty()) {
+                log.info("[INFO] Mise à jour des pièces justificatives");
+                
+                // Supprimer les anciennes associations
+                demandePieceJustificativeRepository.deleteAll(demande.getPieceJustificatives());
+                
+                // Ajouter les nouvelles
+                for (Integer pieceId : demandeDTO.getPieces()) {
+                    PieceJustificative pieceJustificative = pieceJustificativeRepository.findById(pieceId)
+                            .orElseThrow(() -> new IllegalArgumentException("Pièce justificative non trouvée"));
+                    
+                    if (!pieceJustificative.getTypeVisa().getId().equals(demande.getTypeVisa().getId())) {
+                        throw new IllegalArgumentException("Pièce justificative non valide pour le type de visa");
+                    }
+                    
+                    DemandePieceJustificative demandePiece = new DemandePieceJustificative();
+                    demandePiece.setDemande(demande);
+                    demandePiece.setPieceJustificative(pieceJustificative);
+                    demandePieceJustificativeRepository.save(demandePiece);
+                }
+                log.info("[INFO] {} pièce(s) justificative(s) mises à jour", demandeDTO.getPieces().size());
+            }
+            
+            // Sauvegarder la demande
+            demande = demandeRepository.save(demande);
+            log.info("[INFO] Demande {} mise à jour avec succès", demandeId);
+            
+            return demande;
+            
+        } catch (IllegalArgumentException e) {
+            log.error("[ERROR] Erreur validation: {}", e.getMessage());
+            throw new RuntimeException("Erreur validation: " + e.getMessage(), e);
+        } catch (IllegalStateException e) {
+            log.error("[ERROR] Erreur état: {}", e.getMessage());
+            throw new RuntimeException("Erreur: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("[ERROR] Erreur mise à jour demande: {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la mise à jour: " + e.getMessage(), e);
+        }
+    }
 }

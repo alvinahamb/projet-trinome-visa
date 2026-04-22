@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import lombok.extern.slf4j.Slf4j;
@@ -137,6 +139,52 @@ public class DemandeVisaRestController {
       log.error("Erreur inattendue récupération demandes: {}", e.getMessage(), e);
       
       ApiResponse<List<DemandeVisaCplDTO>> response = ApiResponse.error(
+          500,
+          "Erreur serveur interne",
+          "Une erreur inattendue s'est produite"
+      );
+      
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+  }
+
+  /**
+   * Endpoint pour mettre à jour une demande (seulement si statut = En attente)
+   * @param demandeId l'ID de la demande à mettre à jour
+   * @param demandeSaisie les nouvelles données
+   * @return ApiResponse avec le résultat de la mise à jour
+   */
+  @PutMapping("/demande-update/{id}")
+  public ResponseEntity<ApiResponse<Object>> updateDemandeVisa(
+      @PathVariable("id") Integer demandeId,
+      @RequestBody DemandeVisaSaisieDTO demandeSaisie) {
+    try {
+      log.info("Mise à jour demande visa ID: {}", demandeId);
+      
+      Object resultat = demandeVisaService.updateDemandeVisa(demandeId, demandeSaisie);
+      
+      ApiResponse<Object> response = ApiResponse.success(
+          resultat,
+          "Demande de visa mise à jour avec succès"
+      );
+      
+      return ResponseEntity.ok(response);
+      
+    } catch (RuntimeException e) {
+      log.error("Erreur métier mise à jour demande: {}", e.getMessage());
+      
+      ApiResponse<Object> response = ApiResponse.error(
+          400,
+          e.getMessage(),
+          "Erreur lors de la mise à jour de la demande"
+      );
+      
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+      
+    } catch (Exception e) {
+      log.error("Erreur inattendue mise à jour demande: {}", e.getMessage(), e);
+      
+      ApiResponse<Object> response = ApiResponse.error(
           500,
           "Erreur serveur interne",
           "Une erreur inattendue s'est produite"
