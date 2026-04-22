@@ -160,6 +160,49 @@
         button.secondary:hover {
             background-color: #0b7dda;
         }
+        
+        .display-mode {
+            display: block;
+        }
+        
+        .edit-mode {
+            display: none;
+        }
+        
+        .demande-card.editing .display-mode {
+            display: none;
+        }
+        
+        .demande-card.editing .edit-mode {
+            display: block;
+        }
+        
+        .edit-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .edit-actions {
+            margin-top: 20px;
+            text-align: right;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        
+        .edit-actions button {
+            margin-left: 10px;
+        }
+        
+        button.danger {
+            background-color: #f44336;
+        }
+        
+        button.danger:hover {
+            background-color: #da190b;
+        }
     </style>
 </head>
 <body>
@@ -229,6 +272,7 @@
         function creerCarteDemandeHTML(demande, numero) {
             const div = document.createElement('div');
             div.className = 'demande-card';
+            div.id = 'demande_' + numero;
             
             let html = `
                 <div class="demande-header">
@@ -236,115 +280,116 @@
                     <span class="status-badge ${getStatusClass(demande.statut)}">${formatNonNull(demande.statut)}</span>
                 </div>
                 
-                <div class="demande-section">
-                    <h4>État civil</h4>
-                    <div class="info-row">
-                        <div class="info-item">
-                            <span class="info-label">Nom</span>
-                            <span class="info-value">${formatNonNull(demande.nom)}</span>
+                <div class="display-mode">
+                    <div class="demande-section">
+                        <h4>État civil</h4>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Nom</span>
+                                <span class="info-value">${formatNonNull(demande.nom)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Prénom</span>
+                                <span class="info-value">${formatNonNull(demande.prenom)}</span>
+                            </div>
                         </div>
-                        <div class="info-item">
-                            <span class="info-label">Prénom</span>
-                            <span class="info-value">${formatNonNull(demande.prenom)}</span>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Genre</span>
+                                <span class="info-value">${formatNonNull(demande.genre)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Date de naissance</span>
+                                <span class="info-value">${formatDate(demande.dateNaissance)}</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-item">
-                            <span class="info-label">Genre</span>
-                            <span class="info-value">${formatNonNull(demande.genre)}</span>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Lieu de naissance</span>
+                                <span class="info-value">${formatNonNull(demande.lieuNaissance)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Nationalité</span>
+                                <span class="info-value">${formatNonNull(demande.nationalite)}</span>
+                            </div>
                         </div>
-                        <div class="info-item">
-                            <span class="info-label">Date de naissance</span>
-                            <span class="info-value">${formatDate(demande.dateNaissance)}</span>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Situation familiale</span>
+                                <span class="info-value">${formatNonNull(demande.situationFamiliale)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Téléphone</span>
+                                <span class="info-value">${formatNonNull(demande.telephone)}</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-item">
-                            <span class="info-label">Lieu de naissance</span>
-                            <span class="info-value">${formatNonNull(demande.lieuNaissance)}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Nationalité</span>
-                            <span class="info-value">${formatNonNull(demande.nationalite)}</span>
-                        </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-item">
-                            <span class="info-label">Situation familiale</span>
-                            <span class="info-value">${formatNonNull(demande.situationFamiliale)}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Téléphone</span>
-                            <span class="info-value">${formatNonNull(demande.telephone)}</span>
-                        </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-item">
-                            <span class="info-label">Email</span>
-                            <span class="info-value">${formatNonNull(demande.email)}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Adresse</span>
-                            <span class="info-value">${formatNonNull(demande.adresse)}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="demande-section">
-                    <h4>Passeport</h4>
-                    <div class="info-row">
-                        <div class="info-item">
-                            <span class="info-label">Numéro du passeport</span>
-                            <span class="info-value">${formatNonNull(demande.numeroPasseport)}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Pays de délivrance</span>
-                            <span class="info-value">${formatNonNull(demande.paysDelivrance)}</span>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Email</span>
+                                <span class="info-value">${formatNonNull(demande.email)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Adresse</span>
+                                <span class="info-value">${formatNonNull(demande.adresse)}</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="info-row">
-                        <div class="info-item">
-                            <span class="info-label">Date de délivrance</span>
-                            <span class="info-value">${formatDate(demande.dateDelivrance)}</span>
+                    
+                    <div class="demande-section">
+                        <h4>Passeport</h4>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Numéro du passeport</span>
+                                <span class="info-value">${formatNonNull(demande.numeroPasseport)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Pays de délivrance</span>
+                                <span class="info-value">${formatNonNull(demande.paysDelivrance)}</span>
+                            </div>
                         </div>
-                        <div class="info-item">
-                            <span class="info-label">Date d'expiration</span>
-                            <span class="info-value">${formatDate(demande.dateExpiration)}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="demande-section">
-                    <h4>Visa transformable actuel</h4>
-                    <div class="info-row">
-                        <div class="info-item">
-                            <span class="info-label">Référence</span>
-                            <span class="info-value">${formatNonNull(demande.referenceVisa)}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Lieu d'entrée</span>
-                            <span class="info-value">${formatNonNull(demande.lieuEntree)}</span>
-                        </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-item">
-                            <span class="info-label">Date d'entrée</span>
-                            <span class="info-value">${formatDate(demande.dateEntree)}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Date de fin</span>
-                            <span class="info-value">${formatDate(demande.dateFin)}</span>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Date de délivrance</span>
+                                <span class="info-value">${formatDate(demande.dateDelivrance)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Date d'expiration</span>
+                                <span class="info-value">${formatDate(demande.dateExpiration)}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="demande-section">
-                    <h4>Type de visa demandé</h4>
-                    <div class="info-item">
-                        <span class="info-label">Type</span>
-                        <span class="info-value">${formatNonNull(demande.visaType)}</span>
+                    
+                    <div class="demande-section">
+                        <h4>Visa transformable actuel</h4>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Référence</span>
+                                <span class="info-value">${formatNonNull(demande.referenceVisa)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Lieu d'entrée</span>
+                                <span class="info-value">${formatNonNull(demande.lieuEntree)}</span>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Date d'entrée</span>
+                                <span class="info-value">${formatDate(demande.dateEntree)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Date de fin</span>
+                                <span class="info-value">${formatDate(demande.dateFin)}</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                    
+                    <div class="demande-section">
+                        <h4>Type de visa demandé</h4>
+                        <div class="info-item">
+                            <span class="info-label">Type</span>
+                            <span class="info-value">${formatNonNull(demande.visaType)}</span>
+                        </div>
+                    </div>
             `;
             
             if (demande.pieces && demande.pieces.length > 0) {
@@ -359,7 +404,148 @@
                 html += `</div></div>`;
             }
             
+            html += `</div>`;            
+            // Bouton Modifier en mode affichage
+            html += `
+                <div class="display-mode" style="text-align: right; margin-top: 15px;">
+                    <button type="button" onclick="activerEdition('demande_${numero}')" style="background-color: #FF9800;">Modifier</button>
+                </div>
+            `;            
+            // Mode édition
+            html += `
+                <form class="edit-mode" id="form_${numero}">
+                    <div class="demande-section">
+                        <h4>État civil</h4>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Nom</span>
+                                <input type="text" class="edit-input" name="nom" value="${formatNonNull(demande.nom)}">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Prénom</span>
+                                <input type="text" class="edit-input" name="prenom" value="${formatNonNull(demande.prenom)}">
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Genre</span>
+                                <input type="text" class="edit-input" name="genre" value="${formatNonNull(demande.genre)}">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Date de naissance</span>
+                                <input type="date" class="edit-input" name="dateNaissance" value="${demande.dateNaissance || ''}">
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Lieu de naissance</span>
+                                <input type="text" class="edit-input" name="lieuNaissance" value="${formatNonNull(demande.lieuNaissance)}">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Nationalité</span>
+                                <input type="text" class="edit-input" name="nationalite" value="${formatNonNull(demande.nationalite)}">
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Situation familiale</span>
+                                <input type="text" class="edit-input" name="situationFamiliale" value="${formatNonNull(demande.situationFamiliale)}">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Téléphone</span>
+                                <input type="text" class="edit-input" name="telephone" value="${formatNonNull(demande.telephone)}">
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Email</span>
+                                <input type="email" class="edit-input" name="email" value="${formatNonNull(demande.email)}">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Adresse</span>
+                                <input type="text" class="edit-input" name="adresse" value="${formatNonNull(demande.adresse)}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="demande-section">
+                        <h4>Passeport</h4>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Numéro du passeport</span>
+                                <input type="text" class="edit-input" name="numeroPasseport" value="${formatNonNull(demande.numeroPasseport)}">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Pays de délivrance</span>
+                                <input type="text" class="edit-input" name="paysDelivrance" value="${formatNonNull(demande.paysDelivrance)}">
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Date de délivrance</span>
+                                <input type="date" class="edit-input" name="dateDelivrance" value="${demande.dateDelivrance || ''}">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Date d'expiration</span>
+                                <input type="date" class="edit-input" name="dateExpiration" value="${demande.dateExpiration || ''}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="demande-section">
+                        <h4>Visa transformable actuel</h4>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Référence</span>
+                                <input type="text" class="edit-input" name="referenceVisa" value="${formatNonNull(demande.referenceVisa)}">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Lieu d'entrée</span>
+                                <input type="text" class="edit-input" name="lieuEntree" value="${formatNonNull(demande.lieuEntree)}">
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <span class="info-label">Date d'entrée</span>
+                                <input type="date" class="edit-input" name="dateEntree" value="${demande.dateEntree || ''}">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Date de fin</span>
+                                <input type="date" class="edit-input" name="dateFin" value="${demande.dateFin || ''}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="demande-section">
+                        <h4>Type de visa demandé</h4>
+                        <div class="info-item">
+                            <span class="info-label">Type</span>
+                            <input type="text" class="edit-input" name="visaType" value="${formatNonNull(demande.visaType)}">
+                        </div>
+                    </div>
+                    
+                    <div class="edit-actions">
+                        <button type="button" class="danger" onclick="annulerEdition('demande_${numero}')">Annuler</button>
+                        <button type="submit">Enregistrer les modifications</button>
+                    </div>
+                </form>
+            `;
+            
             div.innerHTML = html;
+            
+            // Ajouter l'événement du formulaire
+            const form = div.querySelector(`#form_${numero}`);
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    const donnees = Object.fromEntries(formData);
+                    console.log('Données à enregistrer:', donnees);
+                    // À implémenter : appel API pour enregistrer les modifications
+                    alert('Enregistrement des modifications (à implémenter)');
+                });
+            }
+            
             return div;
         }
 
@@ -398,6 +584,22 @@
             errorDiv.textContent = message;
             
             errorContainer.appendChild(errorDiv);
+        }
+        
+        // Activer le mode édition
+        function activerEdition(demandeId) {
+            const card = document.getElementById(demandeId);
+            if (card) {
+                card.classList.add('editing');
+            }
+        }
+        
+        // Annuler le mode édition
+        function annulerEdition(demandeId) {
+            const card = document.getElementById(demandeId);
+            if (card) {
+                card.classList.remove('editing');
+            }
         }
     </script>
 </body>
