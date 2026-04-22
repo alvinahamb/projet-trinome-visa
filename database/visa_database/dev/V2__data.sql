@@ -17,6 +17,7 @@ INSERT INTO nationalites (libelle) VALUES
 ('AMERICAIN'),
 ('ITALIEN'),
 ('ESPAGNOL'),
+('ALGERIEN'),
 ('CHINOIS');
 
 -- =========================
@@ -44,16 +45,17 @@ INSERT INTO types_demandes (code, description) VALUES
 -- STATUTS_DEMANDES
 -- =========================
 INSERT INTO statuts_demandes (libelle) VALUES
-('EN COURS DE TRAITEMENT'),
-('APPROUVE'),
+('CREE'),
+('SCANNE'),
+('TERMINE'),
 ('ANNULE');
 
 -- =========================
 -- PIECES_JUSTIFICATIVES
 -- =========================
-INSERT INTO pieces_justificatives (libelle) VALUES
-('STATUT DE SOCIETE'),
-('EXTRAIT INSCRIPTION REGISTRE COMMERCE'),
-('CARTE FISCALE'),
-('AUTORISATION EMPLOI'),
-('ATTESTATION EMPLOI');
+INSERT INTO pieces_justificatives (libelle, visa_types_id) VALUES
+('STATUT DE SOCIETE', 1),
+('EXTRAIT INSCRIPTION REGISTRE COMMERCE', 1),
+('CARTE FISCALE', 1),
+('AUTORISATION EMPLOI', 2),
+('ATTESTATION EMPLOI', 2);
