@@ -3,6 +3,8 @@ package com.itu.visabackoffice.controller;
 import com.itu.visabackoffice.dto.ApiResponse;
 import com.itu.visabackoffice.dto.DonneesDemandeVisaDTO;
 import com.itu.visabackoffice.dto.DemandeVisaSaisieDTO;
+import com.itu.visabackoffice.dto.DemandeVisaCplDTO;
+import java.util.List;
 import com.itu.visabackoffice.services.DemandeVisaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -93,6 +95,48 @@ public class DemandeVisaRestController {
       log.error("Erreur inattendue création demande: {}", e.getMessage(), e);
       
       ApiResponse<Object> response = ApiResponse.error(
+          500,
+          "Erreur serveur interne",
+          "Une erreur inattendue s'est produite"
+      );
+      
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+  }
+
+  /**
+   * Endpoint pour récupérer la liste de toutes les demandes au format affichage
+   * @return ApiResponse avec la liste des demandes
+   */
+  @GetMapping("/demande-list")
+  public ResponseEntity<ApiResponse<List<DemandeVisaCplDTO>>> getListeDemandes() {
+    try {
+      log.info("Récupération de la liste des demandes");
+      
+      List<DemandeVisaCplDTO> demandes = demandeVisaService.getListeDemandesComprises();
+      
+      ApiResponse<List<DemandeVisaCplDTO>> response = ApiResponse.success(
+          demandes,
+          "Liste des demandes récupérée avec succès"
+      );
+      
+      return ResponseEntity.ok(response);
+      
+    } catch (RuntimeException e) {
+      log.error("Erreur métier récupération demandes: {}", e.getMessage());
+      
+      ApiResponse<List<DemandeVisaCplDTO>> response = ApiResponse.error(
+          500,
+          e.getMessage(),
+          "Une erreur est survenue lors de la récupération des demandes"
+      );
+      
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+      
+    } catch (Exception e) {
+      log.error("Erreur inattendue récupération demandes: {}", e.getMessage(), e);
+      
+      ApiResponse<List<DemandeVisaCplDTO>> response = ApiResponse.error(
           500,
           "Erreur serveur interne",
           "Une erreur inattendue s'est produite"
