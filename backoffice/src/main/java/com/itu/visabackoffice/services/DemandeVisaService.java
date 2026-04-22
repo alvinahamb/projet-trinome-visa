@@ -410,6 +410,19 @@ public class DemandeVisaService {
                     .collect(Collectors.toList())
                     : List.of();
             
+            // Récupérer le dernier statut de la demande
+            String statut = null;
+            if (demande.getHistoriques() != null && !demande.getHistoriques().isEmpty()) {
+                // Récupérer le dernier historique (le plus récent)
+                HistoriqueStatutDemande dernierHistorique = demande.getHistoriques()
+                        .stream()
+                        .max((h1, h2) -> h1.getDateChangement().compareTo(h2.getDateChangement()))
+                        .orElse(null);
+                if (dernierHistorique != null && dernierHistorique.getStatutDemande() != null) {
+                    statut = dernierHistorique.getStatutDemande().getLibelle();
+                }
+            }
+            
             return DemandeVisaCplDTO.builder()
                     // État civil
                     .nom(demandeur.getNom())
@@ -434,6 +447,8 @@ public class DemandeVisaService {
                     .lieuEntree(visaTransformable != null ? visaTransformable.getLieuEntree() : null)
                     // Type de visa
                     .visaType(demande.getTypeVisa() != null ? demande.getTypeVisa().getLibelle() : null)
+                    // Statut de la demande
+                    .statut(statut)
                     // Pièces justificatives
                     .pieces(pieces)
                     .build();

@@ -41,6 +41,9 @@ public class DemandeVisaCplDTO {
     // Type de visa
     private String visaType;
 
+    // Statut de la demande
+    private String statut;
+
     // Pièces justificatives (libellés)
     private List<String> pieces;
 }

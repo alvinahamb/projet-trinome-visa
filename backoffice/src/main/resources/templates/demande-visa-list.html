@@ -82,6 +82,36 @@
             font-size: 0.9em;
         }
         
+        .status-badge {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            margin-top: 10px;
+        }
+        
+        .status-badge.en-cours {
+            background-color: #FFC107;
+            color: #333;
+        }
+        
+        .status-badge.approuve {
+            background-color: #4CAF50;
+        }
+        
+        .status-badge.rejete {
+            background-color: #f44336;
+        }
+        
+        .status-badge.en-attente {
+            background-color: #2196F3;
+        }
+        
+        .status-badge.other {
+            background-color: #9C27B0;
+        }
+        
         .empty-message {
             text-align: center;
             padding: 40px;
@@ -203,6 +233,7 @@
             let html = `
                 <div class="demande-header">
                     <h3>Demande #${numero}</h3>
+                    <span class="status-badge ${getStatusClass(demande.statut)}">${formatNonNull(demande.statut)}</span>
                 </div>
                 
                 <div class="demande-section">
@@ -342,6 +373,17 @@
         // Formatter une valeur (retourner - si null ou vide)
         function formatNonNull(value) {
             return (value === null || value === undefined || value === '') ? '-' : value;
+        }
+        
+        // Déterminer la classe CSS du statut
+        function getStatusClass(statut) {
+            if (!statut) return 'status-badge other';
+            const lowerStatut = statut.toLowerCase();
+            if (lowerStatut.includes('approuv')) return 'status-badge approuve';
+            if (lowerStatut.includes('rejet')) return 'status-badge rejete';
+            if (lowerStatut.includes('en cours')) return 'status-badge en-cours';
+            if (lowerStatut.includes('attent')) return 'status-badge en-attente';
+            return 'status-badge other';
         }
 
         // Afficher une erreur
