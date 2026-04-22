@@ -223,10 +223,30 @@
 
     <script src="/js/callApi.js"></script>
     <script>
+        // Stockage des données
+        let donneesFormulaire = {};
+        
         // Charger les demandes au chargement de la page
         document.addEventListener('DOMContentLoaded', function() {
-            chargerListeDemandes();
+            chargerDonneesFormulaire();
         });
+
+        // Charger les données du formulaire (genres, nationalités, etc.)
+        function chargerDonneesFormulaire() {
+            getApi('/demande-visa/demande-saisie-form')
+                .then(response => {
+                    if (response.status === 'success') {
+                        donneesFormulaire = response.data;
+                        chargerListeDemandes();
+                    } else {
+                        afficherErreur('Erreur lors du chargement des données: ' + response.message);
+                    }
+                })
+                .catch(error => {
+                    afficherErreur('Erreur réseau: ' + error);
+                    console.error('Erreur réseau:', error);
+                });
+        }
 
         // Charger la liste des demandes
         function chargerListeDemandes() {
@@ -429,7 +449,12 @@
                         <div class="info-row">
                             <div class="info-item">
                                 <span class="info-label">Genre</span>
-                                <input type="text" class="edit-input" name="genre" value="${formatNonNull(demande.genre)}">
+                                <select class="edit-input" name="genre">
+                                    <option value="">Sélectionnez</option>
+                                    ${donneesFormulaire.genres ? donneesFormulaire.genres.map(g => 
+                                        `<option value="${g.libelle}" ${g.libelle === demande.genre ? 'selected' : ''}>${g.libelle}</option>`
+                                    ).join('') : ''}
+                                </select>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Date de naissance</span>
@@ -443,13 +468,23 @@
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Nationalité</span>
-                                <input type="text" class="edit-input" name="nationalite" value="${formatNonNull(demande.nationalite)}">
+                                <select class="edit-input" name="nationalite">
+                                    <option value="">Sélectionnez</option>
+                                    ${donneesFormulaire.nationalites ? donneesFormulaire.nationalites.map(n => 
+                                        `<option value="${n.libelle}" ${n.libelle === demande.nationalite ? 'selected' : ''}>${n.libelle}</option>`
+                                    ).join('') : ''}
+                                </select>
                             </div>
                         </div>
                         <div class="info-row">
                             <div class="info-item">
                                 <span class="info-label">Situation familiale</span>
-                                <input type="text" class="edit-input" name="situationFamiliale" value="${formatNonNull(demande.situationFamiliale)}">
+                                <select class="edit-input" name="situationFamiliale">
+                                    <option value="">Sélectionnez</option>
+                                    ${donneesFormulaire.situationsFamiliales ? donneesFormulaire.situationsFamiliales.map(s => 
+                                        `<option value="${s.libelle}" ${s.libelle === demande.situationFamiliale ? 'selected' : ''}>${s.libelle}</option>`
+                                    ).join('') : ''}
+                                </select>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Téléphone</span>
@@ -520,7 +555,27 @@
                         <h4>Type de visa demandé</h4>
                         <div class="info-item">
                             <span class="info-label">Type</span>
-                            <input type="text" class="edit-input" name="visaType" value="${formatNonNull(demande.visaType)}">
+                            <select class="edit-input" name="visaType">
+                                <option value="">Sélectionnez</option>
+                                ${donneesFormulaire.typesVisa ? donneesFormulaire.typesVisa.map(v => 
+                                    `<option value="${v.libelle}" ${v.libelle === demande.visaType ? 'selected' : ''}>${v.libelle}</option>`
+                                ).join('') : ''}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="demande-section">
+                        <h4>Pièces justificatives</h4>
+                        <div class="pieces-container">
+                            ${donneesFormulaire.piecesJustificatives ? donneesFormulaire.piecesJustificatives.map(piece => {
+                                const isSelected = demande.pieces && demande.pieces.includes(piece.libelle) ? 'checked' : '';
+                                return `
+                                    <div class="piece-item">
+                                        <input type="checkbox" class="piece-checkbox" name="pieces" value="${piece.libelle}" ${isSelected}>
+                                        <label style="display: inline; margin-left: 5px; font-weight: normal;">${piece.libelle}</label>
+                                    </div>
+                                `;
+                            }).join('') : '<p>Aucune pièce disponible</p>'}
                         </div>
                     </div>
                     
@@ -540,6 +595,12 @@
                     e.preventDefault();
                     const formData = new FormData(this);
                     const donnees = Object.fromEntries(formData);
+                    
+                    // Récupérer les pièces sélectionnées
+                    const piecesSelectionnees = Array.from(div.querySelectorAll('input[name="pieces"]:checked'))
+                        .map(checkbox => checkbox.value);
+                    donnees.pieces = piecesSelectionnees;
+                    
                     console.log('Données à enregistrer:', donnees);
                     // À implémenter : appel API pour enregistrer les modifications
                     alert('Enregistrement des modifications (à implémenter)');
