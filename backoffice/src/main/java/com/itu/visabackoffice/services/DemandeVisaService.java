@@ -1,5 +1,6 @@
 import com.itu.visabackoffice.dto.DonneesDemandeVisaDTO;
 import com.itu.visabackoffice.dto.DemandeVisaSaisieDTO;
+import com.itu.visabackoffice.dto.DemandeVisaCplDTO;
 import com.itu.visabackoffice.models.*;
 import com.itu.visabackoffice.repositories.GenreRepository;
 import com.itu.visabackoffice.repositories.SituationFamilialeRepository;
@@ -18,6 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import java.util.Objects;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.time.LocalDate;
 
 @Service
@@ -336,6 +339,109 @@ public class DemandeVisaService {
         } catch (Exception e) {
             log.error("Erreur enregistrement demande: {}", e.getMessage(), e);
             throw new RuntimeException("Erreur lors de l'enregistrement: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Récupère la liste de toutes les demandes au format complet pour affichage
+     * @return Liste de DemandeVisaCplDTO contenant toutes les demandes
+     * @throws RuntimeException en cas d'erreur lors de la récupération
+     */
+    public List<DemandeVisaCplDTO> getListeDemandesComprises() {
+        log.info("[INFO] Début de la récupération de la liste des demandes");
+        
+        try {
+            // Récupérer toutes les demandes
+            var demandes = demandeRepository.findAll();
+            log.info("[INFO] {} demande(s) récupérée(s)", demandes.size());
+            
+            if (demandes.isEmpty()) {
+                log.warn("[WARNING] Aucune demande trouvée");
+                return List.of();
+            }
+            
+            // Convertir chaque Demande en DemandeVisaCplDTO
+            var dtoList = demandes.stream()
+                    .map(this::convertDemandeToDTO)
+                    .collect(Collectors.toList());
+            
+            log.info("[INFO] Conversion réussie de {} demande(s)", dtoList.size());
+            return dtoList;
+            
+        } catch (Exception e) {
+            log.error("[ERROR] Erreur lors de la récupération des demandes: {}", e.getMessage());
+            log.error("[ERROR] StackTrace:", e);
+            throw new RuntimeException("Erreur lors de la récupération des demandes: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Convertit une entité Demande en DemandeVisaCplDTO
+     * @param demande l'entité Demande à convertir
+     * @return DemandeVisaCplDTO avec les données converties
+     */
+    private DemandeVisaCplDTO convertDemandeToDTO(Demande demande) {
+        log.debug("[DEBUG] Conversion Demande {} en DemandeVisaCplDTO", demande.getId());
+        
+        try {
+            // Récupérer le demandeur
+            Demandeur demandeur = demande.getDemandeur();
+            if (demandeur == null) {
+                log.warn("[WARNING] Demandeur non trouvé pour la demande {}", demande.getId());
+                throw new IllegalStateException("Demandeur null pour la demande " + demande.getId());
+            }
+            
+            // Récupérer le passeport (dernier)
+            Passeport passeport = null;
+            if (demandeur.getPasseports() != null && !demandeur.getPasseports().isEmpty()) {
+                passeport = demandeur.getPasseports().get(demandeur.getPasseports().size() - 1);
+            }
+            
+            // Récupérer le visa transformable (dernier)
+            VisaTransformable visaTransformable = null;
+            if (demandeur.getVisasTransformables() != null && !demandeur.getVisasTransformables().isEmpty()) {
+                visaTransformable = demandeur.getVisasTransformables().get(demandeur.getVisasTransformables().size() - 1);
+            }
+            
+            // Récupérer les pièces justificatives
+            List<String> pieces = demande.getPieceJustificatives() != null
+                    ? demande.getPieceJustificatives().stream()
+                    .map(dpj -> dpj.getPieceJustificative().getLibelle())
+                    .collect(Collectors.toList())
+                    : List.of();
+            
+            return DemandeVisaCplDTO.builder()
+                    // État civil
+                    .nom(demandeur.getNom())
+                    .prenom(demandeur.getPrenom())
+                    .genre(demandeur.getGenre() != null ? demandeur.getGenre().getLibelle() : null)
+                    .dateNaissance(demandeur.getDateNaissance())
+                    .lieuNaissance(demandeur.getLieuNaissance())
+                    .telephone(demandeur.getTelephone())
+                    .email(demandeur.getEmail())
+                    .adresse(demandeur.getAdresse())
+                    .nationalite(demandeur.getNationalite() != null ? demandeur.getNationalite().getLibelle() : null)
+                    .situationFamiliale(demandeur.getSituationFamiliale() != null ? demandeur.getSituationFamiliale().getLibelle() : null)
+                    // Passeport
+                    .numeroPasseport(passeport != null ? passeport.getNumero() : null)
+                    .dateDelivrance(passeport != null ? passeport.getDateDelivrance() : null)
+                    .dateExpiration(passeport != null ? passeport.getDateExpiration() : null)
+                    .paysDelivrance(passeport != null ? passeport.getPaysDelivrance() : null)
+                    // Visa transformable
+                    .referenceVisa(visaTransformable != null ? visaTransformable.getReference() : null)
+                    .dateEntree(visaTransformable != null ? visaTransformable.getDateEntree() : null)
+                    .dateFin(visaTransformable != null ? visaTransformable.getDateFin() : null)
+                    .lieuEntree(visaTransformable != null ? visaTransformable.getLieuEntree() : null)
+                    // Type de visa
+                    .visaType(demande.getTypeVisa() != null ? demande.getTypeVisa().getLibelle() : null)
+                    // Pièces justificatives
+                    .pieces(pieces)
+                    .build();
+                    
+        } catch (Exception e) {
+            log.error("[ERROR] Erreur lors de la conversion de la Demande {}: {}", 
+                    demande != null ? demande.getId() : "UNKNOWN", e.getMessage());
+            throw new RuntimeException("Erreur conversion: " + e.getMessage(), e);
         }
     }
 }
