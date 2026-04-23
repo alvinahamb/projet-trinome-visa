@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "types_visas")
+@Table(name = "visa_types")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -14,7 +14,7 @@ public class VisaType {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_type_visa")
+    @Column(name = "id_visa_type")
     private Integer id;
 
     @Column(name = "libelle", nullable = false, length = 100)
