@@ -1,3 +1,5 @@
+package com.itu.visabackoffice.services;
+
 import com.itu.visabackoffice.dto.DonneesDemandeVisaDTO;
 import com.itu.visabackoffice.dto.DemandeVisaSaisieDTO;
 import com.itu.visabackoffice.dto.DemandeVisaCplDTO;
@@ -289,7 +291,7 @@ public class DemandeVisaService {
             // Sauvegarder Demande et setter les FK
             log.info("Sauvegarde Demande");
             demande.setDemandeur(demandeur);
-            demande.setVisaType(visaType);
+            demande.setTypeVisa(visaType);
             demande.setTypeDemande(demandeType);
             demande = demandeRepository.save(demande);
             log.info("Demande sauvegardée avec l'ID: {}", demande.getId());
@@ -560,7 +562,7 @@ public class DemandeVisaService {
             if (demandeDTO.getVisaType() != null) {
                 VisaType visaType = visaTypeRepository.findById(demandeDTO.getVisaType())
                         .orElseThrow(() -> new IllegalArgumentException("Type de visa non trouvé"));
-                demande.setVisaType(visaType);
+                demande.setTypeVisa(visaType);
                 log.info("[INFO] Type de visa mis à jour");
             }
             
