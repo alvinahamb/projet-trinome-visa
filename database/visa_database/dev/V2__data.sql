@@ -28,16 +28,16 @@ INSERT INTO genres (libelle) VALUES
 ('FEMME');
 
 -- =========================
--- TYPES_VISAS
+-- TYPES_VISAS visa_types
 -- =========================
-INSERT INTO types_visas (libelle) VALUES
+INSERT INTO visa_types (libelle) VALUES
 ('INVESTISSEUR'),
 ('TRAVAILLEUR');
 
 -- =========================
--- TYPES_DEMANDES
+-- TYPES_DEMANDES demande_types
 -- =========================
-INSERT INTO types_demandes (code, description) VALUES
+INSERT INTO demande_types (code, description) VALUES
 ('TRANSFORMATION', 'TRANSFORMATION DE VISA'),
 ('TRANSFERT', 'TRANSFERT DE VISA');
 
