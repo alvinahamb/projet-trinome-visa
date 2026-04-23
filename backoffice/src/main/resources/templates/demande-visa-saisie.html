@@ -183,10 +183,13 @@
         // Fonction générique pour remplir un select
         function remplirSelect(selectId, donnees) {
             const select = document.getElementById(selectId);
-            donnees.forEach(item => {
+            donnees.forEach((item, index) => {
                 const option = document.createElement('option');
-                option.value = item.id;
+                // Essayer plusieurs noms de propriété pour l'ID
+                const idValue = item.id || item.idGenre || item.idNationalite || item.idSituationFamiliale || item.idVisaType || index;
+                option.value = idValue;
                 option.textContent = item.libelle || item.nom || item.nomVisa || item.designation;
+                console.log(`Option ${selectId}:`, {idValue, text: option.textContent, item});
                 select.appendChild(option);
             });
         }
@@ -194,9 +197,10 @@
         // Fonction pour remplir une datalist
         function remplirDatalist(datalistId, donnees) {
             const datalist = document.getElementById(datalistId);
-            donnees.forEach(item => {
+            donnees.forEach((item, index) => {
                 const option = document.createElement('option');
-                option.value = item.id;
+                const idValue = item.id || item.idNationalite || index;
+                option.value = idValue;
                 option.textContent = item.libelle || item.nom;
                 datalist.appendChild(option);
             });
@@ -221,6 +225,12 @@
                 return;
             }
 
+            // Ajouter un titre s'il n'existe pas
+            const h2Title = document.querySelector('h2:nth-of-type(5)');
+            if (h2Title && h2Title.textContent === 'Pièces justificatives requises') {
+                h2Title.style.display = 'block';
+            }
+
             // Créer les checkboxes pour chaque pièce
             donneesFormulaire.piecesJustificatives.forEach(piece => {
                 const div = document.createElement('div');
@@ -234,7 +244,8 @@
                 
                 const label = document.createElement('label');
                 label.htmlFor = 'piece_' + piece.id;
-                label.textContent = piece.designation || piece.nom;
+                const libelle = piece.designation || piece.nom || piece.libelle || 'Pièce ' + piece.id;
+                label.textContent = libelle;
                 label.style.display = 'inline';
                 label.style.fontWeight = 'normal';
                 label.style.marginLeft = '5px';
@@ -253,10 +264,20 @@
             const formData = new FormData(this);
             const donnees = Object.fromEntries(formData);
 
+            console.log('Données brutes du formulaire:', donnees);
+
+            // Convertir les champs numériques en integers (avec validation)
+            donnees.genre = donnees.genre && donnees.genre !== '' ? parseInt(donnees.genre, 10) : null;
+            donnees.nationalite = donnees.nationalite && donnees.nationalite !== '' ? parseInt(donnees.nationalite, 10) : null;
+            donnees.situationFamiliale = donnees.situationFamiliale && donnees.situationFamiliale !== '' ? parseInt(donnees.situationFamiliale, 10) : null;
+            donnees.visaType = donnees.visaType && donnees.visaType !== '' ? parseInt(donnees.visaType, 10) : null;
+
             // Récupérer les pièces sélectionnées
             const piecesSelectionnees = Array.from(document.querySelectorAll('input[name="pieces"]:checked'))
-                .map(checkbox => parseInt(checkbox.value));
+                .map(checkbox => parseInt(checkbox.value, 10));
             donnees.pieces = piecesSelectionnees;
+
+            console.log('Données à enregistrer:', donnees);
 
             // Appel POST
             postApi('/demande-visa/demande-saisie-ajout', donnees)
