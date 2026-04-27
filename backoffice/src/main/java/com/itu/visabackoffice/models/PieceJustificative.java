@@ -21,6 +21,6 @@ public class PieceJustificative {
     private String libelle;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "types_visas_id", nullable = false)
+    @JoinColumn(name = "visa_types_id", nullable = false)
     private VisaType typeVisa;
 }

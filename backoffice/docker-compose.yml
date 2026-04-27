@@ -7,13 +7,12 @@ services:
       - ./target-docker/visabackoffice-0.0.1-SNAPSHOT.war:/usr/local/tomcat/webapps/ROOT.war
     environment:
       - JAVA_OPTS=-Xmx512m -Xms256m
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       maven-build:
         condition: service_completed_successfully
     networks:
       - backoffice_network
+      - visa_network
 
   maven-build:
     image: maven:4.0.0-rc-5-eclipse-temurin-25-alpine
@@ -34,3 +33,5 @@ volumes:
 networks:
   backoffice_network:
     driver: bridge
+  visa_network:
+    external: true

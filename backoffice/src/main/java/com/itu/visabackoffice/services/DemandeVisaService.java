@@ -1,3 +1,5 @@
+package com.itu.visabackoffice.services;
+
 import com.itu.visabackoffice.dto.DonneesDemandeVisaDTO;
 import com.itu.visabackoffice.dto.DemandeVisaSaisieDTO;
 import com.itu.visabackoffice.dto.DemandeVisaCplDTO;
@@ -289,7 +291,7 @@ public class DemandeVisaService {
             // Sauvegarder Demande et setter les FK
             log.info("Sauvegarde Demande");
             demande.setDemandeur(demandeur);
-            demande.setVisaType(visaType);
+            demande.setTypeVisa(visaType);
             demande.setTypeDemande(demandeType);
             demande = demandeRepository.save(demande);
             log.info("Demande sauvegardée avec l'ID: {}", demande.getId());
@@ -424,6 +426,8 @@ public class DemandeVisaService {
             }
             
             return DemandeVisaCplDTO.builder()
+                    // ID de la demande
+                    .id(demande.getId())
                     // État civil
                     .nom(demandeur.getNom())
                     .prenom(demandeur.getPrenom())
@@ -464,10 +468,10 @@ public class DemandeVisaService {
      * Met à jour une demande si son statut est "En attente" (id=1)
      * @param demandeId l'ID de la demande à mettre à jour
      * @param demandeDTO les nouvelles données
-     * @return la demande mise à jour
+     * @return DemandeVisaCplDTO la demande mise à jour au format DTO
      * @throws RuntimeException si le statut n'est pas "En attente" ou si erreur
      */
-    public Demande updateDemandeVisa(Integer demandeId, DemandeVisaSaisieDTO demandeDTO) {
+    public DemandeVisaCplDTO updateDemandeVisa(Integer demandeId, DemandeVisaSaisieDTO demandeDTO) {
         log.info("[INFO] Début de la mise à jour de la demande {}", demandeId);
         
         try {
@@ -560,7 +564,7 @@ public class DemandeVisaService {
             if (demandeDTO.getVisaType() != null) {
                 VisaType visaType = visaTypeRepository.findById(demandeDTO.getVisaType())
                         .orElseThrow(() -> new IllegalArgumentException("Type de visa non trouvé"));
-                demande.setVisaType(visaType);
+                demande.setTypeVisa(visaType);
                 log.info("[INFO] Type de visa mis à jour");
             }
             
@@ -592,7 +596,8 @@ public class DemandeVisaService {
             demande = demandeRepository.save(demande);
             log.info("[INFO] Demande {} mise à jour avec succès", demandeId);
             
-            return demande;
+            // Convertir en DTO pour éviter les références circulaires
+            return convertDemandeToDTO(demande);
             
         } catch (IllegalArgumentException e) {
             log.error("[ERROR] Erreur validation: {}", e.getMessage());

@@ -12,4 +12,14 @@ public class HomeController {
   public String home() {
     return "home";
   }
+
+  @GetMapping("/visa-saisie")
+  public String demandeVisaSaisie() {
+    return "demande-visa-saisie";
+  }
+
+  @GetMapping("/visa-list")
+  public String demandeVisaList() {
+    return "demande-visa-list";
+  }
 }

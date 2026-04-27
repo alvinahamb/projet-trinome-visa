@@ -292,7 +292,7 @@
         function creerCarteDemandeHTML(demande, numero) {
             const div = document.createElement('div');
             div.className = 'demande-card';
-            div.id = 'demande_' + numero;
+            div.id = 'demande_' + demande.id;
             
             let html = `
                 <div class="demande-header">
@@ -428,12 +428,12 @@
             // Bouton Modifier en mode affichage
             html += `
                 <div class="display-mode" style="text-align: right; margin-top: 15px;">
-                    <button type="button" onclick="activerEdition('demande_${numero}')" style="background-color: #FF9800;">Modifier</button>
+                    <button type="button" onclick="activerEdition('demande_${demande.id}')" style="background-color: #FF9800;">Modifier</button>
                 </div>
             `;            
             // Mode édition
             html += `
-                <form class="edit-mode" id="form_${numero}">
+                <form class="edit-mode" id="form_${demande.id}">
                     <div class="demande-section">
                         <h4>État civil</h4>
                         <div class="info-row">
@@ -452,7 +452,7 @@
                                 <select class="edit-input" name="genre">
                                     <option value="">Sélectionnez</option>
                                     ${donneesFormulaire.genres ? donneesFormulaire.genres.map(g => 
-                                        `<option value="${g.libelle}" ${g.libelle === demande.genre ? 'selected' : ''}>${g.libelle}</option>`
+                                        `<option value="${g.id}" ${g.libelle === demande.genre ? 'selected' : ''}>${g.libelle}</option>`
                                     ).join('') : ''}
                                 </select>
                             </div>
@@ -471,7 +471,7 @@
                                 <select class="edit-input" name="nationalite">
                                     <option value="">Sélectionnez</option>
                                     ${donneesFormulaire.nationalites ? donneesFormulaire.nationalites.map(n => 
-                                        `<option value="${n.libelle}" ${n.libelle === demande.nationalite ? 'selected' : ''}>${n.libelle}</option>`
+                                        `<option value="${n.id}" ${n.libelle === demande.nationalite ? 'selected' : ''}>${n.libelle}</option>`
                                     ).join('') : ''}
                                 </select>
                             </div>
@@ -482,7 +482,7 @@
                                 <select class="edit-input" name="situationFamiliale">
                                     <option value="">Sélectionnez</option>
                                     ${donneesFormulaire.situationsFamiliales ? donneesFormulaire.situationsFamiliales.map(s => 
-                                        `<option value="${s.libelle}" ${s.libelle === demande.situationFamiliale ? 'selected' : ''}>${s.libelle}</option>`
+                                        `<option value="${s.id}" ${s.libelle === demande.situationFamiliale ? 'selected' : ''}>${s.libelle}</option>`
                                     ).join('') : ''}
                                 </select>
                             </div>
@@ -558,7 +558,7 @@
                             <select class="edit-input" name="visaType">
                                 <option value="">Sélectionnez</option>
                                 ${donneesFormulaire.typesVisa ? donneesFormulaire.typesVisa.map(v => 
-                                    `<option value="${v.libelle}" ${v.libelle === demande.visaType ? 'selected' : ''}>${v.libelle}</option>`
+                                    `<option value="${v.id}" ${v.libelle === demande.visaType ? 'selected' : ''}>${v.libelle}</option>`
                                 ).join('') : ''}
                             </select>
                         </div>
@@ -571,7 +571,7 @@
                                 const isSelected = demande.pieces && demande.pieces.includes(piece.libelle) ? 'checked' : '';
                                 return `
                                     <div class="piece-item">
-                                        <input type="checkbox" class="piece-checkbox" name="pieces" value="${piece.libelle}" ${isSelected}>
+                                        <input type="checkbox" class="piece-checkbox" name="pieces" value="${piece.id}" ${isSelected}>
                                         <label style="display: inline; margin-left: 5px; font-weight: normal;">${piece.libelle}</label>
                                     </div>
                                 `;
@@ -580,7 +580,7 @@
                     </div>
                     
                     <div class="edit-actions">
-                        <button type="button" class="danger" onclick="annulerEdition('demande_${numero}')">Annuler</button>
+                        <button type="button" class="danger" onclick="annulerEdition('demande_${demande.id}')">Annuler</button>
                         <button type="submit">Enregistrer les modifications</button>
                     </div>
                 </form>
@@ -589,26 +589,32 @@
             div.innerHTML = html;
             
             // Ajouter l'événement du formulaire
-            const form = div.querySelector(`#form_${numero}`);
+            const form = div.querySelector(`#form_${demande.id}`);
             if (form) {
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
                     const formData = new FormData(this);
                     const donnees = Object.fromEntries(formData);
                     
+                    // Convertir les champs numériques en integers
+                    donnees.genre = donnees.genre && donnees.genre !== '' ? parseInt(donnees.genre, 10) : null;
+                    donnees.nationalite = donnees.nationalite && donnees.nationalite !== '' ? parseInt(donnees.nationalite, 10) : null;
+                    donnees.situationFamiliale = donnees.situationFamiliale && donnees.situationFamiliale !== '' ? parseInt(donnees.situationFamiliale, 10) : null;
+                    donnees.visaType = donnees.visaType && donnees.visaType !== '' ? parseInt(donnees.visaType, 10) : null;
+                    
                     // Récupérer les pièces sélectionnées
                     const piecesSelectionnees = Array.from(div.querySelectorAll('input[name="pieces"]:checked'))
-                        .map(checkbox => checkbox.value);
+                        .map(checkbox => parseInt(checkbox.value, 10));
                     donnees.pieces = piecesSelectionnees;
                     
                     console.log('Données à enregistrer:', donnees);
                     
                     // Appel API pour enregistrer les modifications
-                    putApi(`/demande-visa/demande-update/${numero}`, donnees)
+                    putApi(`/demande-visa/demande-update/${demande.id}`, donnees)
                         .then(response => {
                             if (response.status === 'success') {
                                 alert('Demande mise à jour avec succès!');
-                                annulerEdition(`demande_${numero}`);
+                                annulerEdition(`demande_${demande.id}`);
                                 // Recharger les demandes
                                 chargerListeDemandes();
                             } else {
