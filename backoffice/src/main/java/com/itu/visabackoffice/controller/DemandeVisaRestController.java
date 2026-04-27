@@ -156,15 +156,15 @@ public class DemandeVisaRestController {
    * @return ApiResponse avec le résultat de la mise à jour
    */
   @PutMapping("/demande-update/{id}")
-  public ResponseEntity<ApiResponse<Object>> updateDemandeVisa(
+  public ResponseEntity<ApiResponse<DemandeVisaCplDTO>> updateDemandeVisa(
       @PathVariable("id") Integer demandeId,
       @RequestBody DemandeVisaSaisieDTO demandeSaisie) {
     try {
       log.info("Mise à jour demande visa ID: {}", demandeId);
       
-      Object resultat = demandeVisaService.updateDemandeVisa(demandeId, demandeSaisie);
+      DemandeVisaCplDTO resultat = demandeVisaService.updateDemandeVisa(demandeId, demandeSaisie);
       
-      ApiResponse<Object> response = ApiResponse.success(
+      ApiResponse<DemandeVisaCplDTO> response = ApiResponse.success(
           resultat,
           "Demande de visa mise à jour avec succès"
       );
@@ -174,7 +174,7 @@ public class DemandeVisaRestController {
     } catch (RuntimeException e) {
       log.error("Erreur métier mise à jour demande: {}", e.getMessage());
       
-      ApiResponse<Object> response = ApiResponse.error(
+      ApiResponse<DemandeVisaCplDTO> response = ApiResponse.error(
           400,
           e.getMessage(),
           "Erreur lors de la mise à jour de la demande"
@@ -185,7 +185,7 @@ public class DemandeVisaRestController {
     } catch (Exception e) {
       log.error("Erreur inattendue mise à jour demande: {}", e.getMessage(), e);
       
-      ApiResponse<Object> response = ApiResponse.error(
+      ApiResponse<DemandeVisaCplDTO> response = ApiResponse.error(
           500,
           "Erreur serveur interne",
           "Une erreur inattendue s'est produite"

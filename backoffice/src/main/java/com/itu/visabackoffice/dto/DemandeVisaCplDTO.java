@@ -14,6 +14,9 @@ import java.util.List;
 @Builder
 public class DemandeVisaCplDTO {
 
+    // ID de la demande
+    private Integer id;
+
     // État civil
     private String nom;
     private String prenom;

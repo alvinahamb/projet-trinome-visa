@@ -10,9 +10,11 @@
         h2 { color: #666; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        input:not([type="checkbox"]), select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .pieces-container { margin-left: 20px; }
-        .piece-item { margin: 10px 0; }
+        .piece-item { margin: 10px 0; display: flex; align-items: center; }
+        .piece-item input[type="checkbox"] { margin-right: 8px; width: auto; cursor: pointer; }
+        .piece-item label { display: inline; margin-bottom: 0; font-weight: normal; margin-left: 0; cursor: pointer; }
         button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
         button:hover { background-color: #45a049; }
     </style>
@@ -219,20 +221,19 @@
                 return;
             }
 
-            // Afficher toutes les pièces justificatives en checkboxes
-            if (donneesFormulaire.piecesJustificatives.length === 0) {
-                piecesContainer.innerHTML = '<p>Aucune pièce disponible</p>';
+            // Filtrer les pièces justificatives selon le type de visa sélectionné
+            const piecesParTypeVisa = donneesFormulaire.piecesJustificatives.filter(piece => {
+                // Vérifier si la pièce appartient au type de visa sélectionné
+                return piece.typeVisa && piece.typeVisa.id && piece.typeVisa.id == visaTypeId;
+            });
+
+            if (piecesParTypeVisa.length === 0) {
+                piecesContainer.innerHTML = '<p>Aucune pièce requise pour ce type de visa</p>';
                 return;
             }
 
-            // Ajouter un titre s'il n'existe pas
-            const h2Title = document.querySelector('h2:nth-of-type(5)');
-            if (h2Title && h2Title.textContent === 'Pièces justificatives requises') {
-                h2Title.style.display = 'block';
-            }
-
-            // Créer les checkboxes pour chaque pièce
-            donneesFormulaire.piecesJustificatives.forEach(piece => {
+            // Créer les checkboxes pour chaque pièce filtrée
+            piecesParTypeVisa.forEach(piece => {
                 const div = document.createElement('div');
                 div.className = 'piece-item';
                 
@@ -244,11 +245,8 @@
                 
                 const label = document.createElement('label');
                 label.htmlFor = 'piece_' + piece.id;
-                const libelle = piece.designation || piece.nom || piece.libelle || 'Pièce ' + piece.id;
+                const libelle = piece.libelle || piece.designation || piece.nom || 'Pièce ' + piece.id;
                 label.textContent = libelle;
-                label.style.display = 'inline';
-                label.style.fontWeight = 'normal';
-                label.style.marginLeft = '5px';
                 
                 div.appendChild(input);
                 div.appendChild(label);
