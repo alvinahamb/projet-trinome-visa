@@ -37,4 +37,9 @@ public class HomeController {
   public String duplicataSaisie() {
     return "duplicata-saisie";
   }
+
+  @GetMapping("/transfert-visa-saisie")
+  public String transfertVisaSaisie() {
+    return "transfert-visa-saisie";
+  }
 }

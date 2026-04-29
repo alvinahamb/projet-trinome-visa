@@ -181,7 +181,13 @@
             return {
                 isDuplicata: params.get('carte_resident') === 'true',
                 visaReference: params.get('visa_reference'),
-                visaType: params.get('visa_type')
+                visaType: params.get('visa_type'),
+                isTransferVisa: params.get('transfer_visa') === 'true',
+                transferVisaReference: params.get('visa_reference'),
+                passportNumber: params.get('passport_number'),
+                passportCountry: params.get('passport_country'),
+                passportDeliveryDate: params.get('passport_delivery_date'),
+                passportExpirationDate: params.get('passport_expiration_date')
             };
         }
 
@@ -189,9 +195,27 @@
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = getUrlParams();
             
-            // Définir le flag duplicata
+            // Définir le flag duplicata ou transfert visa
             if (urlParams.isDuplicata) {
                 document.getElementById('isDuplicata').value = 'true';
+            }
+
+            // Pré-remplir le formulaire si transfert visa
+            if (urlParams.isTransferVisa) {
+                setTimeout(() => {
+                    if (urlParams.passportNumber) {
+                        document.getElementById('numeroPasseport').value = urlParams.passportNumber;
+                    }
+                    if (urlParams.passportCountry) {
+                        document.getElementById('paysDelivrance').value = urlParams.passportCountry;
+                    }
+                    if (urlParams.passportDeliveryDate) {
+                        document.getElementById('dateDelivrance').value = urlParams.passportDeliveryDate;
+                    }
+                    if (urlParams.passportExpirationDate) {
+                        document.getElementById('dateExpiration').value = urlParams.passportExpirationDate;
+                    }
+                }, 500);
             }
 
             chargerDonneesFormulaire();

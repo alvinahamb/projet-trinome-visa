@@ -3,6 +3,7 @@ package com.itu.visabackoffice.services;
 import com.itu.visabackoffice.dto.DonneesDemandeVisaDTO;
 import com.itu.visabackoffice.dto.DemandeVisaSaisieDTO;
 import com.itu.visabackoffice.dto.DemandeVisaCplDTO;
+import com.itu.visabackoffice.dto.TransfertVisaSaisieDTO;
 import com.itu.visabackoffice.models.*;
 import com.itu.visabackoffice.repositories.GenreRepository;
 import com.itu.visabackoffice.repositories.SituationFamilialeRepository;
@@ -740,67 +741,6 @@ public class DemandeVisaService {
     }
 
     /**
-     * Recherche un VISA transformable par sa référence
-     * @param reference la référence du visa
-     * @return Un objet contenant les informations du visa et du demandeur si trouvé, null sinon
-     * @throws RuntimeException en cas d'erreur
-     */
-    public Object searchVisaByReference(String reference) {
-        log.info("Recherche d'un VISA avec la référence: {}", reference);
-        
-        try {
-            if (reference == null || reference.trim().isEmpty()) {
-                log.warn("Référence vide dans la recherche");
-                return null;
-            }
-            
-            // Rechercher le visa transformable
-            var visasTransformables = visaTransformableRepository.findAll()
-                    .stream()
-                    .filter(visa -> visa.getReference().equalsIgnoreCase(reference.trim()))
-                    .toList();
-            
-            if (visasTransformables.isEmpty()) {
-                log.info("Aucun VISA trouvé avec la référence: {}", reference);
-                return null;
-            }
-            
-            VisaTransformable visa = visasTransformables.get(0);
-            log.info("VISA trouvé avec ID: {}", visa.getId());
-            
-            // Récupérer le demandeur associé
-            Demandeur demandeur = visa.getDemandeur();
-            if (demandeur == null) {
-                log.warn("Demandeur non trouvé pour le VISA: {}", visa.getId());
-                return null;
-            }
-            
-            // Construire une réponse avec les informations du visa et du demandeur
-            return java.util.Map.ofEntries(
-                    java.util.Map.entry("referenceVisa", visa.getReference()),
-                    java.util.Map.entry("nom", demandeur.getNom()),
-                    java.util.Map.entry("prenom", demandeur.getPrenom()),
-                    java.util.Map.entry("dateNaissance", demandeur.getDateNaissance()),
-                    java.util.Map.entry("lieuNaissance", demandeur.getLieuNaissance()),
-                    java.util.Map.entry("telephone", demandeur.getTelephone()),
-                    java.util.Map.entry("email", demandeur.getEmail()),
-                    java.util.Map.entry("adresse", demandeur.getAdresse()),
-                    java.util.Map.entry("nationalite", demandeur.getNationalite() != null ? demandeur.getNationalite().getLibelle() : null),
-                    java.util.Map.entry("genre", demandeur.getGenre() != null ? demandeur.getGenre().getLibelle() : null),
-                    java.util.Map.entry("situationFamiliale", demandeur.getSituationFamiliale() != null ? demandeur.getSituationFamiliale().getLibelle() : null),
-                    java.util.Map.entry("visaType", visa.getId()),
-                    java.util.Map.entry("dateEntree", visa.getDateEntree()),
-                    java.util.Map.entry("dateFin", visa.getDateFin()),
-                    java.util.Map.entry("lieuEntree", visa.getLieuEntree())
-            );
-            
-        } catch (Exception e) {
-            log.error("Erreur lors de la recherche du VISA: {}", e.getMessage(), e);
-            throw new RuntimeException("Erreur lors de la recherche du VISA: " + e.getMessage(), e);
-        }
-    }
-
-    /**
      * Recherche une carte résident par sa référence
      * @param reference la référence de la carte résident
      * @return Un objet contenant les informations de la carte résident et du demandeur si trouvé, null sinon
@@ -852,6 +792,205 @@ public class DemandeVisaService {
         } catch (Exception e) {
             log.error("Erreur lors de la recherche de la carte résident: {}", e.getMessage(), e);
             throw new RuntimeException("Erreur lors de la recherche de la carte résident: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Recherche un VISA (Visa table) par sa référence - utilisé pour transfert visa
+     * @param reference la référence du visa
+     * @return Un objet contenant les informations du visa et du demandeur si trouvé, null sinon
+     * @throws RuntimeException en cas d'erreur
+     */
+    public Object searchVisaByReference(String reference) {
+        log.info("Recherche d'un VISA (table visas) avec la référence: {}", reference);
+
+        try {
+            if (reference == null || reference.trim().isEmpty()) {
+                log.warn("Référence vide dans la recherche");
+                return null;
+            }
+
+            var visas = visaRepository.findAll()
+                    .stream()
+                    .filter(visa -> visa.getReference().equalsIgnoreCase(reference.trim()))
+                    .toList();
+
+            if (visas.isEmpty()) {
+                log.info("Aucun VISA trouvé avec la référence: {}", reference);
+                return null;
+            }
+
+            Visa visa = visas.get(0);
+            log.info("VISA trouvé avec ID: {}", visa.getId());
+
+            Demande demande = visa.getDemande();
+            Demandeur demandeur = demande != null ? demande.getDemandeur() : null;
+            if (demandeur == null) {
+                log.warn("Demandeur non trouvé pour le VISA: {}", visa.getId());
+                return null;
+            }
+
+            return java.util.Map.ofEntries(
+                    java.util.Map.entry("reference", visa.getReference()),
+                    java.util.Map.entry("nom", demandeur.getNom()),
+                    java.util.Map.entry("prenom", demandeur.getPrenom()),
+                    java.util.Map.entry("dateNaissance", demandeur.getDateNaissance()),
+                    java.util.Map.entry("lieuNaissance", demandeur.getLieuNaissance()),
+                    java.util.Map.entry("telephone", demandeur.getTelephone()),
+                    java.util.Map.entry("email", demandeur.getEmail()),
+                    java.util.Map.entry("adresse", demandeur.getAdresse()),
+                    java.util.Map.entry("nationalite", demandeur.getNationalite() != null ? demandeur.getNationalite().getLibelle() : null),
+                    java.util.Map.entry("genre", demandeur.getGenre() != null ? demandeur.getGenre().getLibelle() : null),
+                    java.util.Map.entry("situationFamiliale", demandeur.getSituationFamiliale() != null ? demandeur.getSituationFamiliale().getLibelle() : null),
+                    java.util.Map.entry("dateDebut", visa.getDateDebut()),
+                    java.util.Map.entry("dateFin", visa.getDateFin()),
+                    java.util.Map.entry("lieuEntree", visa.getLieuEntree())
+            );
+
+        } catch (Exception e) {
+            log.error("Erreur lors de la recherche du VISA: {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la recherche du VISA: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Crée une demande de transfert de visa avec un nouveau passeport
+     * @param transfertSaisie les données du transfert (visa reference + new passport data)
+     * @return Demande créée
+     * @throws RuntimeException en cas d'erreur
+     */
+    public Demande enregistrerTransfertVisa(TransfertVisaSaisieDTO transfertSaisie) {
+        log.info("Début enregistrement transfert visa - Référence VISA: {}", transfertSaisie.getVisaReference());
+
+        try {
+            // ========== VALIDATION DES DONNÉES ==========
+            if (transfertSaisie.getVisaReference() == null || transfertSaisie.getVisaReference().trim().isEmpty()) {
+                log.error("La référence du visa est manquante");
+                throw new IllegalArgumentException("La référence du visa est obligatoire");
+            }
+
+            if (transfertSaisie.getNumeroPasseport() == null || transfertSaisie.getNumeroPasseport().isEmpty()) {
+                log.error("Le numéro du passeport est manquant");
+                throw new IllegalArgumentException("Le numéro du passeport est obligatoire");
+            }
+
+            if (transfertSaisie.getDateExpiration() != null && transfertSaisie.getDateDelivrance() != null) {
+                if (transfertSaisie.getDateExpiration().isBefore(transfertSaisie.getDateDelivrance())) {
+                    log.error("La date d'expiration du passeport est antérieure à la date de délivrance");
+                    throw new IllegalArgumentException("La date d'expiration doit être postérieure à la date de délivrance");
+                }
+            }
+
+            log.info("Validation réussie");
+
+            // ========== RECHERCHE DU VISA EXISTANT ==========
+            log.info("Recherche du visa avec la référence: {}", transfertSaisie.getVisaReference());
+            var visas = visaRepository.findAll()
+                    .stream()
+                    .filter(visa -> visa.getReference().equalsIgnoreCase(transfertSaisie.getVisaReference().trim()))
+                    .toList();
+
+            if (visas.isEmpty()) {
+                log.error("Aucun visa trouvé avec la référence: {}", transfertSaisie.getVisaReference());
+                throw new IllegalArgumentException("Aucun visa trouvé avec cette référence");
+            }
+
+            Visa visaExistant = visas.get(0);
+            log.info("Visa trouvé avec ID: {}", visaExistant.getId());
+
+            Demande demandeExistante = visaExistant.getDemande();
+            if (demandeExistante == null) {
+                log.error("Demande non trouvée pour le visa");
+                throw new IllegalArgumentException("Demande associée au visa non trouvée");
+            }
+
+            Demandeur demandeurOriginal = demandeExistante.getDemandeur();
+            if (demandeurOriginal == null) {
+                log.error("Demandeur non trouvé pour la demande");
+                throw new IllegalArgumentException("Demandeur non trouvé");
+            }
+
+            log.info("Demandeur trouvé: {} {}", demandeurOriginal.getNom(), demandeurOriginal.getPrenom());
+
+            // ========== CRÉATION DES OBJETS POUR LE TRANSFERT ==========
+            log.info("Création des objets pour le transfert visa");
+
+            // 1. Créer un nouveau Passeport
+            log.info("Création du nouveau passeport");
+            Passeport nouveauPasseport = new Passeport();
+            nouveauPasseport.setNumero(transfertSaisie.getNumeroPasseport());
+            nouveauPasseport.setDateDelivrance(transfertSaisie.getDateDelivrance());
+            nouveauPasseport.setDateExpiration(transfertSaisie.getDateExpiration());
+            nouveauPasseport.setPaysDelivrance(transfertSaisie.getPaysDelivrance());
+            nouveauPasseport.setDemandeur(demandeurOriginal);
+
+            // 2. Récupérer DemandeType pour transfert (id = 2, ou id = 1 si 2 n'existe pas)
+            log.info("Récupération type de demande pour transfert");
+            DemandeType demandeTypeTransfert = demandeTypeRepository.findById(2)
+                    .orElseGet(() -> demandeTypeRepository.findById(1)
+                            .orElseThrow(() -> new IllegalArgumentException("Type de demande non trouvé")));
+            log.info("Type de demande trouvé: {}", demandeTypeTransfert.getId());
+
+            // 3. Récupérer le VisaType de la demande originale
+            VisaType visaType = demandeExistante.getTypeVisa();
+            if (visaType == null) {
+                log.error("Type de visa non trouvé dans la demande originale");
+                throw new IllegalArgumentException("Type de visa non trouvé");
+            }
+
+            log.info("Objets créés avec succès (sans persistence)");
+
+            // ========== PERSISTENCE DES OBJETS ==========
+            log.info("Début de la persistence des objets");
+
+            // Sauvegarder le nouveau Passeport
+            log.info("Sauvegarde du nouveau passeport");
+            nouveauPasseport = passeportRepository.save(nouveauPasseport);
+            log.info("Nouveau passeport sauvegardé avec l'ID: {}", nouveauPasseport.getId());
+
+            // Créer une nouvelle Demande de transfert
+            log.info("Sauvegarde de la demande de transfert");
+            Demande demandeTransfert = new Demande();
+            demandeTransfert.setDemandeur(demandeurOriginal);
+            demandeTransfert.setTypeVisa(visaType);
+            demandeTransfert.setTypeDemande(demandeTypeTransfert);
+            demandeTransfert = demandeRepository.save(demandeTransfert);
+            log.info("Demande de transfert sauvegardée avec l'ID: {}", demandeTransfert.getId());
+
+            // Créer l'historique avec statut PENDING (id=1)
+            log.info("Création de l'historique statut initial");
+            StatutDemande statutInitial = statutDemandeRepository.findById(1)
+                    .orElseThrow(() -> new IllegalArgumentException("Statut initial (id=1) non trouvé"));
+
+            HistoriqueStatutDemande historique = new HistoriqueStatutDemande();
+            historique.setDemande(demandeTransfert);
+            historique.setStatutDemande(statutInitial);
+            historique.setCommentaire("Demande de transfert de visa créée avec nouveau passeport");
+            historiqueStatutDemandeRepository.save(historique);
+            log.info("Historique statut créé avec succès");
+
+            // Copier les pièces justificatives de la demande originale
+            if (demandeExistante.getPieceJustificatives() != null && !demandeExistante.getPieceJustificatives().isEmpty()) {
+                log.info("Copie des {} pièces justificatives", demandeExistante.getPieceJustificatives().size());
+                for (DemandePieceJustificative dpjOriginal : demandeExistante.getPieceJustificatives()) {
+                    DemandePieceJustificative dpjNew = new DemandePieceJustificative();
+                    dpjNew.setDemande(demandeTransfert);
+                    dpjNew.setPieceJustificative(dpjOriginal.getPieceJustificative());
+                    demandePieceJustificativeRepository.save(dpjNew);
+                    log.info("Pièce justificative {} copiée", dpjOriginal.getPieceJustificative().getId());
+                }
+            }
+
+            log.info("Persistence réussie - Transfert de visa enregistré avec succès");
+            return demandeTransfert;
+
+        } catch (IllegalArgumentException e) {
+            log.error("Erreur validation: {}", e.getMessage());
+            throw new RuntimeException("Erreur validation: " + e.getMessage(), e);
+
+        } catch (Exception e) {
+            log.error("Erreur enregistrement transfert visa: {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'enregistrement du transfert: " + e.getMessage(), e);
         }
     }
 }
