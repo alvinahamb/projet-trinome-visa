@@ -20,6 +20,9 @@ public class PieceJustificative {
     @Column(name = "libelle", nullable = false, length = 150)
     private String libelle;
 
+    @Column(name = "est_obligatoire", nullable = false)
+    private Boolean estObligatoire;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "visa_types_id", nullable = false)
     private VisaType typeVisa;

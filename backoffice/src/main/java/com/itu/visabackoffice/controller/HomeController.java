@@ -18,6 +18,11 @@ public class HomeController {
     return "demande-visa-saisie";
   }
 
+  @GetMapping("/demande-visa-saisie")
+  public String demandeVisaSaisieAlias() {
+    return "demande-visa-saisie";
+  }
+
   @GetMapping("/visa-list")
   public String demandeVisaList() {
     return "demande-visa-list";

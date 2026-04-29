@@ -53,9 +53,9 @@ INSERT INTO statuts_demandes (libelle) VALUES
 -- =========================
 -- PIECES_JUSTIFICATIVES
 -- =========================
-INSERT INTO pieces_justificatives (libelle, visa_types_id) VALUES
-('STATUT DE SOCIETE', 1),
-('EXTRAIT INSCRIPTION REGISTRE COMMERCE', 1),
-('CARTE FISCALE', 1),
-('AUTORISATION EMPLOI', 2),
-('ATTESTATION EMPLOI', 2);
+INSERT INTO pieces_justificatives (libelle, visa_types_id, est_obligatoire) VALUES
+('STATUT DE SOCIETE', 1, FALSE),
+('EXTRAIT INSCRIPTION REGISTRE COMMERCE', 1, FALSE),
+('CARTE FISCALE', 1, FALSE),
+('AUTORISATION EMPLOI', 2, FALSE),
+('ATTESTATION EMPLOI', 2, FALSE);

@@ -41,6 +41,8 @@ CREATE TABLE pieces_justificatives (
     id_piece_justificative   SERIAL PRIMARY KEY,
     libelle                  VARCHAR(150) NOT NULL, 
     visa_types_id            INT NOT NULL,
+    est_obligatoire          BOOLEAN NOT NULL,
+
     CONSTRAINT fk_pieces_justificatives_visa_types
         FOREIGN KEY (visa_types_id)
         REFERENCES visa_types(id_visa_type)

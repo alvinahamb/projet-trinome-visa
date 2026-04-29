@@ -17,6 +17,7 @@ import com.itu.visabackoffice.repositories.StatutDemandeRepository;
 import com.itu.visabackoffice.repositories.HistoriqueStatutDemandeRepository;
 import com.itu.visabackoffice.repositories.DemandeTypeRepository;
 import com.itu.visabackoffice.repositories.NationaliteRepository;
+import com.itu.visabackoffice.repositories.CarteResidentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +67,9 @@ public class DemandeVisaService {
     
     @Autowired
     private NationaliteRepository nationaliteRepository;
+
+    @Autowired
+    private CarteResidentRepository carteResidentRepository;
     
     /**
      * Récupère toutes les données nécessaires pour une demande de visa
@@ -765,6 +769,61 @@ public class DemandeVisaService {
         } catch (Exception e) {
             log.error("Erreur lors de la recherche du VISA: {}", e.getMessage(), e);
             throw new RuntimeException("Erreur lors de la recherche du VISA: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Recherche une carte résident par sa référence
+     * @param reference la référence de la carte résident
+     * @return Un objet contenant les informations de la carte résident et du demandeur si trouvé, null sinon
+     * @throws RuntimeException en cas d'erreur
+     */
+    public Object searchCarteResidentByReference(String reference) {
+        log.info("Recherche d'une carte résident avec la référence: {}", reference);
+
+        try {
+            if (reference == null || reference.trim().isEmpty()) {
+                log.warn("Référence vide dans la recherche");
+                return null;
+            }
+
+            var carteResidentOpt = carteResidentRepository.findByReference(reference.trim());
+
+            if (carteResidentOpt.isEmpty()) {
+                log.info("Aucune carte résident trouvée avec la référence: {}", reference);
+                return null;
+            }
+
+            CarteResident carteResident = carteResidentOpt.get();
+            log.info("Carte résident trouvée avec ID: {}", carteResident.getId());
+
+            Demande demande = carteResident.getDemande();
+            Demandeur demandeur = demande != null ? demande.getDemandeur() : null;
+            if (demandeur == null) {
+                log.warn("Demandeur non trouvé pour la carte résident: {}", carteResident.getId());
+                return null;
+            }
+
+            return java.util.Map.ofEntries(
+                    java.util.Map.entry("reference", carteResident.getReference()),
+                    java.util.Map.entry("nom", demandeur.getNom()),
+                    java.util.Map.entry("prenom", demandeur.getPrenom()),
+                    java.util.Map.entry("dateNaissance", demandeur.getDateNaissance()),
+                    java.util.Map.entry("lieuNaissance", demandeur.getLieuNaissance()),
+                    java.util.Map.entry("telephone", demandeur.getTelephone()),
+                    java.util.Map.entry("email", demandeur.getEmail()),
+                    java.util.Map.entry("adresse", demandeur.getAdresse()),
+                    java.util.Map.entry("nationalite", demandeur.getNationalite() != null ? demandeur.getNationalite().getLibelle() : null),
+                    java.util.Map.entry("genre", demandeur.getGenre() != null ? demandeur.getGenre().getLibelle() : null),
+                    java.util.Map.entry("situationFamiliale", demandeur.getSituationFamiliale() != null ? demandeur.getSituationFamiliale().getLibelle() : null),
+                    java.util.Map.entry("dateDebut", carteResident.getDateDebut()),
+                    java.util.Map.entry("dateFin", carteResident.getDateFin()),
+                    java.util.Map.entry("lieuEntree", carteResident.getLieuEntree())
+            );
+
+        } catch (Exception e) {
+            log.error("Erreur lors de la recherche de la carte résident: {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la recherche de la carte résident: " + e.getMessage(), e);
         }
     }
 }
