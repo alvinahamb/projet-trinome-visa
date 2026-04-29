@@ -29,4 +29,8 @@ public class CarteResident {
 
     @Column(name = "lieu_entree", length = 150)
     private String lieuEntree;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "demande_id", nullable = false)
+    private Demande demande;
 }
