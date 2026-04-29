@@ -18,6 +18,7 @@ import com.itu.visabackoffice.repositories.HistoriqueStatutDemandeRepository;
 import com.itu.visabackoffice.repositories.DemandeTypeRepository;
 import com.itu.visabackoffice.repositories.NationaliteRepository;
 import com.itu.visabackoffice.repositories.CarteResidentRepository;
+import com.itu.visabackoffice.repositories.VisaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
@@ -70,6 +71,9 @@ public class DemandeVisaService {
 
     @Autowired
     private CarteResidentRepository carteResidentRepository;
+
+    @Autowired
+    private VisaRepository visaRepository;
     
     /**
      * Récupère toutes les données nécessaires pour une demande de visa
@@ -323,6 +327,30 @@ public class DemandeVisaService {
                 historiqueOriginal.setCommentaire("Visa original - déjà traité");
                 historiqueStatutDemandeRepository.save(historiqueOriginal);
                 log.info("Historique statut COMPLETED créé pour demande originale");
+
+                {
+                    java.time.LocalDate dateDebut = java.time.LocalDate.now();
+                    java.time.LocalDate dateFin = dateDebut.plusYears(1);
+                    String referenceAuto = "AUTO-" + demandeOriginal.getId();
+
+                    Visa visa = new Visa();
+                    visa.setDemande(demandeOriginal);
+                    visa.setDateDebut(dateDebut);
+                    visa.setDateFin(dateFin);
+                    visa.setReference(referenceAuto);
+                    visa.setLieuEntree(demandeSaisie.getLieuEntree());
+                    visaRepository.save(visa);
+                    log.info("Visa créé pour demande originale avec la référence: {}", referenceAuto);
+
+                    CarteResident carteResident = new CarteResident();
+                    carteResident.setDemande(demandeOriginal);
+                    carteResident.setDateDebut(dateDebut);
+                    carteResident.setDateFin(dateFin);
+                    carteResident.setReference(referenceAuto);
+                    carteResident.setLieuEntree(demandeSaisie.getLieuEntree());
+                    carteResidentRepository.save(carteResident);
+                    log.info("Carte résident créée pour demande originale avec la référence: {}", referenceAuto);
+                }
                 
                 // Ajouter les pièces justificatives à la demande originale
                 if (demandeSaisie.getPieces() != null && !demandeSaisie.getPieces().isEmpty()) {

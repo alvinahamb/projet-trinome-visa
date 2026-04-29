@@ -179,7 +179,7 @@
         function getUrlParams() {
             const params = new URLSearchParams(window.location.search);
             return {
-                isDuplicata: params.get('duplicata') === 'true',
+                isDuplicata: params.get('carte_resident') === 'true',
                 visaReference: params.get('visa_reference'),
                 visaType: params.get('visa_type')
             };
