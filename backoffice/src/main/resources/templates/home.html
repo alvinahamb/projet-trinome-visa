@@ -1,14 +1,29 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Home</title>
-  </head>
-  <body>
-    <h1>Home</h1>
-    <a href="/visa-saisie">Enregistrer une nouvelle demande de VISA</a>
-    <br><br>
-    <a href="/visa-list">Voir la liste des demandes</a>
-  </body>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Backoffice de gestion des demandes de VISA">
+    <title>Tableau de Bord - VISA Backoffice</title>
+    <link rel="stylesheet" href="/style/main.css">
+</head>
+<body>
+    <div class="home-container">
+        <div class="home-card">
+            <h1>🏛️ VISA Management</h1>
+            <p style="color: var(--mid-text); font-size: 1.05rem; margin-bottom: 20px;">
+                Bienvenue dans le tableau de bord de gestion des demandes de visa
+            </p>
+            
+            <div class="home-actions">
+                <a href="/visa-saisie" class="home-link primary">
+                    ➕ Enregistrer une nouvelle demande de VISA
+                </a>
+                <a href="/visa-list" class="home-link secondary">
+                    📋 Voir la liste de toutes les demandes
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
 </html>
