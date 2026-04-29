@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Demande de duplicata - Recherche et création de visa duplicata">
+    <title>Duplicata - VISA Backoffice</title>
+    <link rel="stylesheet" th:href="@{/style/main.css}">
+    <style>
+        .duplicata-container {
+            max-width: 600px;
+            margin: 40px auto;
+        }
+
+        .search-section {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .search-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .search-group button {
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .search-group button:hover {
+            background: var(--primary-hover);
+        }
+
+        .search-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .search-result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            display: block;
+        }
+
+        .search-result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            display: block;
+        }
+
+        .visa-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .visa-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .visa-info-row:last-child {
+            border-bottom: none;
+        }
+
+        .visa-info-label {
+            font-weight: 600;
+            color: var(--mid-text);
+        }
+
+        .visa-info-value {
+            color: var(--text-color);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .btn-continue {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-continue:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-cancel {
+            background: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .btn-cancel:hover {
+            background: #ddd;
+        }
+
+        .visa-type-selection {
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .visa-type-selection.show {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .form-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-outline:hover {
+            background: var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="duplicata-container">
+        <div class="page-header" style="text-align: center; margin-bottom: 30px;">
+            <h1 class="page-title">🔄 Duplicata de Visa</h1>
+            <p class="page-subtitle">Recherchez le visa existant pour créer un duplicata</p>
+        </div>
+
+        <!-- Section de recherche -->
+        <div class="search-section">
+            <h3 style="margin-bottom: 15px;">Rechercher un Visa</h3>
+            <div class="search-group">
+                <input type="text" id="referenceInput" placeholder="Entrez la référence du VISA" />
+                <button onclick="rechercherVisa()">🔍 Rechercher</button>
+            </div>
+            <div id="searchResult" class="search-result"></div>
+            <div id="visaInfoContainer"></div>
+            <div id="actionButtons"></div>
+        </div>
+
+        <!-- Section de sélection du type de visa (si le visa n'est pas trouvé) -->
+        <div id="visaTypeSelection" class="visa-type-selection">
+            <h3 style="margin-bottom: 15px;">Sélectionnez le type de Visa</h3>
+            <div class="form-group">
+                <label for="visaTypeSelector">Type de visa demandé <span style="color: var(--danger-color);">*</span></label>
+                <select id="visaTypeSelector" required>
+                    <option value="">Sélectionnez</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-outline" onclick="annulerDuplicata()">← Annuler</button>
+                <button type="button" class="btn-primary" onclick="allerAuFormulaireAvecDuplicata()">Continuer →</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/callApi.js"></script>
+    <script>
+        let visaFoundData = null;
+        let donneesFormulaire = {};
+
+        // Charger les données du formulaire au démarrage
+        document.addEventListener('DOMContentLoaded', function() {
+            chargerDonneesFormulaire();
+        });
+
+        function chargerDonneesFormulaire() {
+            getApi('/demande-visa/demande-saisie-form')
+                .then(response => {
+                    if (response.status === 'success') {
+                        donneesFormulaire = response.data;
+                        remplirTypeVisa();
+                    } else {
+                        console.error('Erreur:', response.error);
+                    }
+                })
+                .catch(error => console.error('Erreur réseau:', error));
+        }
+
+        function remplirTypeVisa() {
+            const select = document.getElementById('visaTypeSelector');
+            if (donneesFormulaire.typesVisa) {
+                donneesFormulaire.typesVisa.forEach((item, index) => {
+                    const option = document.createElement('option');
+                    const idValue = item.id || item.idVisaType || index;
+                    option.value = idValue;
+                    option.textContent = item.libelle || item.nomVisa || item.designation;
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        function rechercherVisa() {
+            const reference = document.getElementById('referenceInput').value.trim();
+            
+            if (!reference) {
+                afficherResultat('error', '❌ Veuillez entrer une référence de VISA');
+                return;
+            }
+
+            // Appel API pour chercher le visa
+            getApi(`/demande-visa/search?reference=${encodeURIComponent(reference)}`)
+                .then(response => {
+                    if (response.status === 'success' && response.data) {
+                        visaFoundData = response.data;
+                        afficherResultat('success', '✅ Visa trouvé!');
+                        afficherInfosVisa(response.data);
+                        afficherBoutonsAction('found');
+                        // Masquer la sélection du type de visa
+                        document.getElementById('visaTypeSelection').classList.remove('show');
+                    } else {
+                        visaFoundData = null;
+                        afficherResultat('error', '❌ Aucun visa trouvé avec cette référence');
+                        afficherBoutonsAction('notfound');
+                        // Afficher la sélection du type de visa
+                        document.getElementById('visaTypeSelection').classList.add('show');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur réseau:', error);
+                    visaFoundData = null;
+                    afficherResultat('error', '❌ Erreur lors de la recherche. Veuillez réessayer.');
+                    afficherBoutonsAction('notfound');
+                    document.getElementById('visaTypeSelection').classList.add('show');
+                });
+        }
+
+        function afficherResultat(type, message) {
+            const resultDiv = document.getElementById('searchResult');
+            resultDiv.className = `search-result ${type}`;
+            resultDiv.textContent = message;
+        }
+
+        function afficherInfosVisa(visa) {
+            const container = document.getElementById('visaInfoContainer');
+            if (visa && Object.keys(visa).length > 0) {
+                let html = '<div class="visa-info">';
+                
+                // Afficher les informations principales du visa
+                if (visa.referenceVisa) {
+                    html += `<div class="visa-info-row">
+                        <span class="visa-info-label">Référence:</span>
+                        <span class="visa-info-value">${visa.referenceVisa}</span>
+                    </div>`;
+                }
+                
+                if (visa.nom) {
+                    html += `<div class="visa-info-row">
+                        <span class="visa-info-label">Passager:</span>
+                        <span class="visa-info-value">${visa.nom} ${visa.prenom || ''}</span>
+                    </div>`;
+                }
+                
+                if (visa.visaType || visa.nomVisa) {
+                    html += `<div class="visa-info-row">
+                        <span class="visa-info-label">Type de Visa:</span>
+                        <span class="visa-info-value">${visa.visaType || visa.nomVisa}</span>
+                    </div>`;
+                }
+                
+                if (visa.dateEntree) {
+                    html += `<div class="visa-info-row">
+                        <span class="visa-info-label">Date d'entrée:</span>
+                        <span class="visa-info-value">${visa.dateEntree}</span>
+                    </div>`;
+                }
+                
+                if (visa.dateFin) {
+                    html += `<div class="visa-info-row">
+                        <span class="visa-info-label">Date de fin:</span>
+                        <span class="visa-info-value">${visa.dateFin}</span>
+                    </div>`;
+                }
+                
+                html += '</div>';
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '';
+            }
+        }
+
+        function afficherBoutonsAction(state) {
+            const container = document.getElementById('actionButtons');
+            
+            if (state === 'found') {
+                container.innerHTML = `
+                    <div class="action-buttons">
+                        <button class="btn-cancel" onclick="annulerDuplicata()">← Retour</button>
+                        <button class="btn-continue" onclick="allerAuFormulaireAvecVisa()">Créer le Duplicata →</button>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '';
+            }
+        }
+
+        function allerAuFormulaireAvecVisa() {
+            if (visaFoundData) {
+                // Créer une URL pour le formulaire de création avec les paramètres du visa
+                const params = new URLSearchParams();
+                params.append('duplicata', 'true');
+                params.append('visa_reference', visaFoundData.referenceVisa || '');
+                
+                // Rediriger vers le formulaire de création avec les paramètres
+                window.location.href = `/visa-saisie?${params.toString()}`;
+            }
+        }
+
+        function allerAuFormulaireAvecDuplicata() {
+            const visaTypeId = document.getElementById('visaTypeSelector').value;
+            
+            if (!visaTypeId) {
+                alert('Veuillez sélectionner un type de visa');
+                return;
+            }
+
+            const params = new URLSearchParams();
+            params.append('duplicata', 'true');
+            params.append('visa_type', visaTypeId);
+            
+            window.location.href = `/visa-saisie?${params.toString()}`;
+        }
+
+        function annulerDuplicata() {
+            window.location.href = '/';
+        }
+
+        // Permettre la recherche avec la touche Entrée
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('referenceInput').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    rechercherVisa();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

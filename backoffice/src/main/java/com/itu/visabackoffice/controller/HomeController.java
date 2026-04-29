@@ -22,4 +22,14 @@ public class HomeController {
   public String demandeVisaList() {
     return "demande-visa-list";
   }
+
+  @GetMapping("/duplicata")
+  public String duplicata() {
+    return "duplicata";
+  }
+
+  @GetMapping("/duplicata-saisie")
+  public String duplicataSaisie() {
+    return "duplicata-saisie";
+  }
 }

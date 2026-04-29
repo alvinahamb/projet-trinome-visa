@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Builder.Default;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -39,6 +40,10 @@ public class DemandeVisaSaisieDTO {
     
     // Type de visa
     private Integer visaType;
+    
+    // Duplicata flag - if true, will create 2 demandes (1 completed + 1 pending for duplicata)
+    @Default
+    private Boolean isDuplicata = false;
     
     // Pièces justificatives
     private List<Integer> pieces;

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import lombok.extern.slf4j.Slf4j;
 
@@ -186,6 +187,56 @@ public class DemandeVisaRestController {
       log.error("Erreur inattendue mise à jour demande: {}", e.getMessage(), e);
       
       ApiResponse<DemandeVisaCplDTO> response = ApiResponse.error(
+          500,
+          "Erreur serveur interne",
+          "Une erreur inattendue s'est produite"
+      );
+      
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+  }
+
+  /**
+   * Endpoint pour rechercher un VISA par sa référence - utilisé pour la fonctionnalité duplicata
+   * @param reference la référence du visa
+   * @return ApiResponse avec les informations du visa et du demandeur si trouvé
+   */
+  @GetMapping("/search")
+  public ResponseEntity<ApiResponse<Object>> searchVisaByReference(@RequestParam String reference) {
+    try {
+      log.info("Recherche VISA par référence: {}", reference);
+      
+      Object resultat = demandeVisaService.searchVisaByReference(reference);
+      
+      if (resultat != null) {
+        ApiResponse<Object> response = ApiResponse.success(
+            resultat,
+            "Visa trouvé avec succès"
+        );
+        return ResponseEntity.ok(response);
+      } else {
+        ApiResponse<Object> response = ApiResponse.success(
+            null,
+            "Aucun visa trouvé avec cette référence"
+        );
+        return ResponseEntity.ok(response);
+      }
+      
+    } catch (RuntimeException e) {
+      log.error("Erreur métier recherche visa: {}", e.getMessage());
+      
+      ApiResponse<Object> response = ApiResponse.error(
+          400,
+          e.getMessage(),
+          "Erreur lors de la recherche du visa"
+      );
+      
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+      
+    } catch (Exception e) {
+      log.error("Erreur inattendue recherche visa: {}", e.getMessage(), e);
+      
+      ApiResponse<Object> response = ApiResponse.error(
           500,
           "Erreur serveur interne",
           "Une erreur inattendue s'est produite"

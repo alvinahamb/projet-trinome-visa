@@ -16,6 +16,8 @@
 
         <div class="form-container">
             <form id="demandeVisaForm" method="post">
+                <!-- Hidden input for duplicata flag -->
+                <input type="hidden" id="isDuplicata" name="isDuplicata" value="false">
                 
                 <div class="card-section">
                     <h4>👤 État civil</h4>
@@ -173,9 +175,35 @@
         // Stockage des données
         let donneesFormulaire = {};
 
+        // Fonction pour extraire les paramètres de l'URL
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                isDuplicata: params.get('duplicata') === 'true',
+                visaReference: params.get('visa_reference'),
+                visaType: params.get('visa_type')
+            };
+        }
+
         // Charger les données au chargement de la page
         document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = getUrlParams();
+            
+            // Définir le flag duplicata
+            if (urlParams.isDuplicata) {
+                document.getElementById('isDuplicata').value = 'true';
+            }
+
             chargerDonneesFormulaire();
+
+            // Si c'est un duplicata avec un type de visa spécifié, le pré-sélectionner
+            if (urlParams.isDuplicata && urlParams.visaType) {
+                setTimeout(() => {
+                    const select = document.getElementById('visaType');
+                    select.value = urlParams.visaType;
+                    afficherPiecesParTypeVisa();
+                }, 1000); // Attendre que le formulaire soit rempli
+            }
         });
 
         // Charger toutes les données du formulaire en une seule requête
@@ -298,6 +326,9 @@
             donnees.nationalite = donnees.nationalite && donnees.nationalite !== '' ? parseInt(donnees.nationalite, 10) : null;
             donnees.situationFamiliale = donnees.situationFamiliale && donnees.situationFamiliale !== '' ? parseInt(donnees.situationFamiliale, 10) : null;
             donnees.visaType = donnees.visaType && donnees.visaType !== '' ? parseInt(donnees.visaType, 10) : null;
+
+            // Convertir le flag duplicata en booléen
+            donnees.isDuplicata = donnees.isDuplicata === 'true';
 
             // Récupérer les pièces sélectionnées
             const piecesSelectionnees = Array.from(document.querySelectorAll('input[name="pieces"]:checked'))
