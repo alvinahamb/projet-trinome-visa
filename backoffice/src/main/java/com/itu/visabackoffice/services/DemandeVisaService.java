@@ -23,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Objects;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.time.LocalDate;
 
 @Service
 @Slf4j
@@ -251,11 +250,19 @@ public class DemandeVisaService {
             visaTransformable.setDateFin(demandeSaisie.getDateFin());
             visaTransformable.setLieuEntree(demandeSaisie.getLieuEntree());
             
-            // 4. Récupérer DemandeType (par défaut : id = 1)
+            // 4. Récupérer DemandeType (par défaut : id = 1 pour normal)
             log.info("Récupération type de demande");
             DemandeType demandeType = demandeTypeRepository.findById(1)
                     .orElseThrow(() -> new IllegalArgumentException("Type de demande par défaut non trouvé"));
             log.info("Type de demande trouvé: {}", demandeType.getId());
+            
+            // Récupérer demandeType pour duplicata si nécessaire (id = 3)
+            DemandeType demandeTypeDuplicata = null;
+            if (demandeSaisie.getIsDuplicata() != null && demandeSaisie.getIsDuplicata()) {
+                demandeTypeDuplicata = demandeTypeRepository.findById(3)
+                        .orElseThrow(() -> new IllegalArgumentException("Type de demande DUPLICATA (id=3) non trouvé"));
+                log.info("Type de demande DUPLICATA trouvé: {}", demandeTypeDuplicata.getId());
+            }
             
             // 5. Créer la Demande
             log.info("Création objet Demande");
@@ -288,51 +295,140 @@ public class DemandeVisaService {
                     .orElseThrow(() -> new IllegalArgumentException("Type de visa non trouvé avec l'ID: " + demandeSaisie.getVisaType()));
             log.info("Type de visa trouvé: {}", visaType.getId());
             
-            // Sauvegarder Demande et setter les FK
-            log.info("Sauvegarde Demande");
-            demande.setDemandeur(demandeur);
-            demande.setTypeVisa(visaType);
-            demande.setTypeDemande(demandeType);
-            demande = demandeRepository.save(demande);
-            log.info("Demande sauvegardée avec l'ID: {}", demande.getId());
+            // ========== HANDLING DUPLICATA ==========
+            boolean isDuplicata = demandeSaisie.getIsDuplicata() != null && demandeSaisie.getIsDuplicata();
             
-            // ========== CRÉATION DE L'HISTORIQUE STATUT ==========
-            log.info("Création de l'historique statut initial");
-            StatutDemande statutInitial = statutDemandeRepository.findById(1)
-                    .orElseThrow(() -> new IllegalArgumentException("Statut initial (id=1) non trouvé"));
-            
-            HistoriqueStatutDemande historique = new HistoriqueStatutDemande();
-            historique.setDemande(demande);
-            historique.setStatutDemande(statutInitial);
-            historique.setCommentaire("Demande créée");
-            historiqueStatutDemandeRepository.save(historique);
-            log.info("Historique statut créé avec succès");
-            
-            // Sauvegarder les DemandePieceJustificative
-            if (demandeSaisie.getPieces() != null && !demandeSaisie.getPieces().isEmpty()) {
-                log.info("Sauvegarde des {} pièces justificatives", demandeSaisie.getPieces().size());
-                for (Integer pieceId : demandeSaisie.getPieces()) {
-                    PieceJustificative pieceJustificative = pieceJustificativeRepository.findById(pieceId)
-                            .orElseThrow(() -> new IllegalArgumentException("Pièce justificative non trouvée avec l'ID: " + pieceId));
-                    
-                    // Vérifier que la pièce est bien associée au type de visa demandé
-                    if (!pieceJustificative.getTypeVisa().getId().equals(visaType.getId())) {
-                        log.warn("Pièce justificative {} n'est pas associée au type de visa {}", pieceId, visaType.getId());
-                        throw new IllegalArgumentException("La pièce justificative (id: " + pieceId + ") n'est pas valide pour le type de visa sélectionné");
+            if (isDuplicata) {
+                log.info("Création de 2 demandes (original completed + duplicata pending)");
+                
+                // ========== PREMIÈRE DEMANDE (ORIGINAL - COMPLÉTÉE) ==========
+                log.info("Sauvegarde de la première demande (original completed)");
+                Demande demandeOriginal = new Demande();
+                demandeOriginal.setDemandeur(demandeur);
+                demandeOriginal.setTypeVisa(visaType);
+                demandeOriginal.setTypeDemande(demandeType); // demande_type = 1
+                demandeOriginal = demandeRepository.save(demandeOriginal);
+                log.info("Demande originale sauvegardée avec l'ID: {}", demandeOriginal.getId());
+                
+                // Créer l'historique avec statut COMPLETED (id=3)
+                StatutDemande statutCompleted = statutDemandeRepository.findById(3)
+                        .orElseThrow(() -> new IllegalArgumentException("Statut COMPLETED (id=3) non trouvé"));
+                HistoriqueStatutDemande historiqueOriginal = new HistoriqueStatutDemande();
+                historiqueOriginal.setDemande(demandeOriginal);
+                historiqueOriginal.setStatutDemande(statutCompleted);
+                historiqueOriginal.setCommentaire("Visa original - déjà traité");
+                historiqueStatutDemandeRepository.save(historiqueOriginal);
+                log.info("Historique statut COMPLETED créé pour demande originale");
+                
+                // Ajouter les pièces justificatives à la demande originale
+                if (demandeSaisie.getPieces() != null && !demandeSaisie.getPieces().isEmpty()) {
+                    log.info("Sauvegarde des {} pièces justificatives pour demande originale", demandeSaisie.getPieces().size());
+                    for (Integer pieceId : demandeSaisie.getPieces()) {
+                        PieceJustificative pieceJustificative = pieceJustificativeRepository.findById(pieceId)
+                                .orElseThrow(() -> new IllegalArgumentException("Pièce justificative non trouvée avec l'ID: " + pieceId));
+                        
+                        if (!pieceJustificative.getTypeVisa().getId().equals(visaType.getId())) {
+                            log.warn("Pièce justificative {} n'est pas associée au type de visa {}", pieceId, visaType.getId());
+                            throw new IllegalArgumentException("La pièce justificative (id: " + pieceId + ") n'est pas valide pour le type de visa sélectionné");
+                        }
+                        
+                        DemandePieceJustificative demandePiece = new DemandePieceJustificative();
+                        demandePiece.setDemande(demandeOriginal);
+                        demandePiece.setPieceJustificative(pieceJustificative);
+                        demandePieceJustificativeRepository.save(demandePiece);
+                        log.info("Pièce justificative {} associée à la demande originale", pieceId);
                     }
-                    
-                    DemandePieceJustificative demandePiece = new DemandePieceJustificative();
-                    demandePiece.setDemande(demande);
-                    demandePiece.setPieceJustificative(pieceJustificative);
-                    demandePieceJustificativeRepository.save(demandePiece);
-                    log.info("Pièce justificative {} associée à la demande", pieceId);
                 }
+                
+                // ========== DEUXIÈME DEMANDE (DUPLICATA - EN ATTENTE) ==========
+                log.info("Sauvegarde de la deuxième demande (duplicata pending)");
+                Demande demandeDuplicata = new Demande();
+                demandeDuplicata.setDemandeur(demandeur);
+                demandeDuplicata.setTypeVisa(visaType);
+                demandeDuplicata.setTypeDemande(demandeTypeDuplicata); // demande_type = 3 (DUPLICATA)
+                demande = demandeRepository.save(demandeDuplicata);
+                log.info("Demande duplicata sauvegardée avec l'ID: {}", demande.getId());
+                
+                // Créer l'historique avec statut PENDING (id=1)
+                StatutDemande statutInitial = statutDemandeRepository.findById(1)
+                        .orElseThrow(() -> new IllegalArgumentException("Statut initial (id=1) non trouvé"));
+                HistoriqueStatutDemande historiqueDuplicata = new HistoriqueStatutDemande();
+                historiqueDuplicata.setDemande(demande);
+                historiqueDuplicata.setStatutDemande(statutInitial);
+                historiqueDuplicata.setCommentaire("Demande de duplicata créée");
+                historiqueStatutDemandeRepository.save(historiqueDuplicata);
+                log.info("Historique statut PENDING créé pour demande duplicata");
+                
+                // Ajouter les pièces justificatives à la demande duplicata
+                if (demandeSaisie.getPieces() != null && !demandeSaisie.getPieces().isEmpty()) {
+                    log.info("Sauvegarde des {} pièces justificatives pour demande duplicata", demandeSaisie.getPieces().size());
+                    for (Integer pieceId : demandeSaisie.getPieces()) {
+                        PieceJustificative pieceJustificative = pieceJustificativeRepository.findById(pieceId)
+                                .orElseThrow(() -> new IllegalArgumentException("Pièce justificative non trouvée avec l'ID: " + pieceId));
+                        
+                        if (!pieceJustificative.getTypeVisa().getId().equals(visaType.getId())) {
+                            log.warn("Pièce justificative {} n'est pas associée au type de visa {}", pieceId, visaType.getId());
+                            throw new IllegalArgumentException("La pièce justificative (id: " + pieceId + ") n'est pas valide pour le type de visa sélectionné");
+                        }
+                        
+                        DemandePieceJustificative demandePiece = new DemandePieceJustificative();
+                        demandePiece.setDemande(demande);
+                        demandePiece.setPieceJustificative(pieceJustificative);
+                        demandePieceJustificativeRepository.save(demandePiece);
+                        log.info("Pièce justificative {} associée à la demande duplicata", pieceId);
+                    }
+                }
+                
+                log.info("Persistence réussie - Duplicata enregistré avec succès (2 demandes créées)");
+                return demande; // Retourner la demande duplicata (la plus récente)
+                
             } else {
-                log.warn("Aucune pièce justificative sélectionnée");
+                // ========== CAS NORMAL (SANS DUPLICATA) ==========
+                log.info("Sauvegarde Demande (cas normal)");
+                demande.setDemandeur(demandeur);
+                demande.setTypeVisa(visaType);
+                demande.setTypeDemande(demandeType);
+                demande = demandeRepository.save(demande);
+                log.info("Demande sauvegardée avec l'ID: {}", demande.getId());
+                
+                // ========== CRÉATION DE L'HISTORIQUE STATUT ==========
+                log.info("Création de l'historique statut initial");
+                StatutDemande statutInitial = statutDemandeRepository.findById(1)
+                        .orElseThrow(() -> new IllegalArgumentException("Statut initial (id=1) non trouvé"));
+                
+                HistoriqueStatutDemande historique = new HistoriqueStatutDemande();
+                historique.setDemande(demande);
+                historique.setStatutDemande(statutInitial);
+                historique.setCommentaire("Demande créée");
+                historiqueStatutDemandeRepository.save(historique);
+                log.info("Historique statut créé avec succès");
+                
+                // Sauvegarder les DemandePieceJustificative
+                if (demandeSaisie.getPieces() != null && !demandeSaisie.getPieces().isEmpty()) {
+                    log.info("Sauvegarde des {} pièces justificatives", demandeSaisie.getPieces().size());
+                    for (Integer pieceId : demandeSaisie.getPieces()) {
+                        PieceJustificative pieceJustificative = pieceJustificativeRepository.findById(pieceId)
+                                .orElseThrow(() -> new IllegalArgumentException("Pièce justificative non trouvée avec l'ID: " + pieceId));
+                        
+                        // Vérifier que la pièce est bien associée au type de visa demandé
+                        if (!pieceJustificative.getTypeVisa().getId().equals(visaType.getId())) {
+                            log.warn("Pièce justificative {} n'est pas associée au type de visa {}", pieceId, visaType.getId());
+                            throw new IllegalArgumentException("La pièce justificative (id: " + pieceId + ") n'est pas valide pour le type de visa sélectionné");
+                        }
+                        
+                        DemandePieceJustificative demandePiece = new DemandePieceJustificative();
+                        demandePiece.setDemande(demande);
+                        demandePiece.setPieceJustificative(pieceJustificative);
+                        demandePieceJustificativeRepository.save(demandePiece);
+                        log.info("Pièce justificative {} associée à la demande", pieceId);
+                    }
+                } else {
+                    log.warn("Aucune pièce justificative sélectionnée");
+                }
+                
+                log.info("Persistence réussie - Demande enregistrée avec succès");
+                return demande;
             }
-            
-            log.info("Persistence réussie - Demande enregistrée avec succès");
-            return demande;
             
         } catch (IllegalArgumentException e) {
             log.error("Erreur validation: {}", e.getMessage());
@@ -608,6 +704,67 @@ public class DemandeVisaService {
         } catch (Exception e) {
             log.error("[ERROR] Erreur mise à jour demande: {}", e.getMessage(), e);
             throw new RuntimeException("Erreur lors de la mise à jour: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Recherche un VISA transformable par sa référence
+     * @param reference la référence du visa
+     * @return Un objet contenant les informations du visa et du demandeur si trouvé, null sinon
+     * @throws RuntimeException en cas d'erreur
+     */
+    public Object searchVisaByReference(String reference) {
+        log.info("Recherche d'un VISA avec la référence: {}", reference);
+        
+        try {
+            if (reference == null || reference.trim().isEmpty()) {
+                log.warn("Référence vide dans la recherche");
+                return null;
+            }
+            
+            // Rechercher le visa transformable
+            var visasTransformables = visaTransformableRepository.findAll()
+                    .stream()
+                    .filter(visa -> visa.getReference().equalsIgnoreCase(reference.trim()))
+                    .toList();
+            
+            if (visasTransformables.isEmpty()) {
+                log.info("Aucun VISA trouvé avec la référence: {}", reference);
+                return null;
+            }
+            
+            VisaTransformable visa = visasTransformables.get(0);
+            log.info("VISA trouvé avec ID: {}", visa.getId());
+            
+            // Récupérer le demandeur associé
+            Demandeur demandeur = visa.getDemandeur();
+            if (demandeur == null) {
+                log.warn("Demandeur non trouvé pour le VISA: {}", visa.getId());
+                return null;
+            }
+            
+            // Construire une réponse avec les informations du visa et du demandeur
+            return java.util.Map.ofEntries(
+                    java.util.Map.entry("referenceVisa", visa.getReference()),
+                    java.util.Map.entry("nom", demandeur.getNom()),
+                    java.util.Map.entry("prenom", demandeur.getPrenom()),
+                    java.util.Map.entry("dateNaissance", demandeur.getDateNaissance()),
+                    java.util.Map.entry("lieuNaissance", demandeur.getLieuNaissance()),
+                    java.util.Map.entry("telephone", demandeur.getTelephone()),
+                    java.util.Map.entry("email", demandeur.getEmail()),
+                    java.util.Map.entry("adresse", demandeur.getAdresse()),
+                    java.util.Map.entry("nationalite", demandeur.getNationalite() != null ? demandeur.getNationalite().getLibelle() : null),
+                    java.util.Map.entry("genre", demandeur.getGenre() != null ? demandeur.getGenre().getLibelle() : null),
+                    java.util.Map.entry("situationFamiliale", demandeur.getSituationFamiliale() != null ? demandeur.getSituationFamiliale().getLibelle() : null),
+                    java.util.Map.entry("visaType", visa.getId()),
+                    java.util.Map.entry("dateEntree", visa.getDateEntree()),
+                    java.util.Map.entry("dateFin", visa.getDateFin()),
+                    java.util.Map.entry("lieuEntree", visa.getLieuEntree())
+            );
+            
+        } catch (Exception e) {
+            log.error("Erreur lors de la recherche du VISA: {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la recherche du VISA: " + e.getMessage(), e);
         }
     }
 }

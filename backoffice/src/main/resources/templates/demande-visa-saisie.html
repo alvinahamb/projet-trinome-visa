@@ -3,151 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demande de VISA</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
-        h1 { color: #333; }
-        h2 { color: #666; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input:not([type="checkbox"]), select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .pieces-container { margin-left: 20px; }
-        .piece-item { margin: 10px 0; display: flex; align-items: center; }
-        .piece-item input[type="checkbox"] { margin-right: 8px; width: auto; cursor: pointer; }
-        .piece-item label { display: inline; margin-bottom: 0; font-weight: normal; margin-left: 0; cursor: pointer; }
-        button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #45a049; }
-    </style>
+    <meta name="description" content="Formulaire d'enregistrement de demande de VISA">
+    <title>Nouvelle Demande de VISA</title>
+    <link rel="stylesheet" th:href="@{/style/main.css}">
 </head>
 <body>
-    <h1>Demande d'enregistrement de VISA</h1>
-    <form id="demandeVisaForm" method="post">
-        
-        <h2>État civil</h2>
-        <div class="form-group">
-            <label for="nom">Nom:</label>
-            <input type="text" id="nom" name="nom" required>
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">📝 Demande d'enregistrement de VISA</h1>
+            <p class="page-subtitle">Veuillez remplir tous les champs obligatoires</p>
         </div>
 
-        <div class="form-group">
-            <label for="prenom">Prénom:</label>
-            <input type="text" id="prenom" name="prenom" required>
-        </div>
+        <div class="form-container">
+            <form id="demandeVisaForm" method="post">
+                <!-- Hidden input for duplicata flag -->
+                <input type="hidden" id="isDuplicata" name="isDuplicata" value="false">
+                
+                <div class="card-section">
+                    <h4>👤 État civil</h4>
+                    <div class="info-row">
+                        <div class="form-group">
+                            <label for="nom">Nom <span style="color: var(--danger-color);">*</span></label>
+                            <input type="text" id="nom" name="nom" required>
+                        </div>
 
-        <div class="form-group">
-            <label for="genre">Genre:</label>
-            <select id="genre" name="genre" required>
-                <option value="">Sélectionnez</option>
-            </select>
-        </div>
+                        <div class="form-group">
+                            <label for="prenom">Prénom <span style="color: var(--danger-color);">*</span></label>
+                            <input type="text" id="prenom" name="prenom" required>
+                        </div>
+                    </div>
 
-        <div class="form-group">
-            <label for="dateNaissance">Date de naissance:</label>
-            <input type="date" id="dateNaissance" name="dateNaissance" required>
-        </div>
+                    <div class="info-row">
+                        <div class="form-group">
+                            <label for="genre">Genre <span style="color: var(--danger-color);">*</span></label>
+                            <select id="genre" name="genre" required>
+                                <option value="">Sélectionnez</option>
+                            </select>
+                        </div>
 
-        <div class="form-group">
-            <label for="lieuNaissance">Lieu de naissance:</label>
-            <input type="text" id="lieuNaissance" name="lieuNaissance" required>
-        </div>
+                        <div class="form-group">
+                            <label for="dateNaissance">Date de naissance <span style="color: var(--danger-color);">*</span></label>
+                            <input type="date" id="dateNaissance" name="dateNaissance" required>
+                        </div>
+                    </div>
 
-        <div class="form-group">
-            <label for="telephone">Téléphone:</label>
-            <input type="tel" id="telephone" name="telephone" required>
-        </div>
+                    <div class="info-row">
+                        <div class="form-group">
+                            <label for="lieuNaissance">Lieu de naissance <span style="color: var(--danger-color);">*</span></label>
+                            <input type="text" id="lieuNaissance" name="lieuNaissance" required>
+                        </div>
 
-        <div class="form-group">
-            <label for="email">Email:</label>
-            <input type="email" id="email" name="email" required>
-        </div>
+                        <div class="form-group">
+                            <label for="nationalite">Nationalité <span style="color: var(--danger-color);">*</span></label>
+                            <input type="text" id="nationalite" name="nationalite" list="nationalitesList" required>
+                            <datalist id="nationalitesList">
+                                <!-- Les nationalités seront ajoutées dynamiquement ici -->
+                            </datalist>
+                        </div>
+                    </div>
 
-        <div class="form-group">
-            <label for="adresse">Adresse:</label>
-            <input type="text" id="adresse" name="adresse" required>
-        </div>
+                    <div class="info-row">
+                        <div class="form-group">
+                            <label for="telephone">Téléphone <span style="color: var(--danger-color);">*</span></label>
+                            <input type="tel" id="telephone" name="telephone" required>
+                        </div>
 
-        <div class="form-group">
-            <label for="nationalite">Nationalité:</label>
-            <input type="text" id="nationalite" name="nationalite" list="nationalitesList" required>
-            <datalist id="nationalitesList">
-                <!-- Les nationalités seront ajoutées dynamiquement ici -->
-            </datalist>
-        </div>
+                        <div class="form-group">
+                            <label for="email">Email <span style="color: var(--danger-color);">*</span></label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                    </div>
 
-        <div class="form-group">
-            <label for="situationFamiliale">Situation familiale:</label>
-            <select id="situationFamiliale" name="situationFamiliale" required>
-                <option value="">Sélectionnez</option>
-            </select>
-        </div>
+                    <div class="form-group">
+                        <label for="adresse">Adresse <span style="color: var(--danger-color);">*</span></label>
+                        <input type="text" id="adresse" name="adresse" required>
+                    </div>
 
-        <h2>Passeport</h2>
-        <div class="form-group">
-            <label for="numeroPasseport">Numéro du passeport:</label>
-            <input type="text" id="numeroPasseport" name="numeroPasseport" required>
-        </div>
+                    <div class="form-group">
+                        <label for="situationFamiliale">Situation familiale <span style="color: var(--danger-color);">*</span></label>
+                        <select id="situationFamiliale" name="situationFamiliale" required>
+                            <option value="">Sélectionnez</option>
+                        </select>
+                    </div>
+                </div>
 
-        <div class="form-group">
-            <label for="dateDelivrance">Date de délivrance:</label>
-            <input type="date" id="dateDelivrance" name="dateDelivrance" required>
-        </div>
+                <div class="card-section">
+                    <h4>🛂 Passeport</h4>
+                    <div class="info-row">
+                        <div class="form-group">
+                            <label for="numeroPasseport">Numéro du passeport <span style="color: var(--danger-color);">*</span></label>
+                            <input type="text" id="numeroPasseport" name="numeroPasseport" required>
+                        </div>
 
-        <div class="form-group">
-            <label for="dateExpiration">Date d'expiration:</label>
-            <input type="date" id="dateExpiration" name="dateExpiration" required>
-        </div>
+                        <div class="form-group">
+                            <label for="paysDelivrance">Pays de délivrance <span style="color: var(--danger-color);">*</span></label>
+                            <input type="text" id="paysDelivrance" name="paysDelivrance" required>
+                        </div>
+                    </div>
 
-        <div class="form-group">
-            <label for="paysDelivrance">Pays de délivrance:</label>
-            <input type="text" id="paysDelivrance" name="paysDelivrance" required>
-        </div>
+                    <div class="info-row">
+                        <div class="form-group">
+                            <label for="dateDelivrance">Date de délivrance <span style="color: var(--danger-color);">*</span></label>
+                            <input type="date" id="dateDelivrance" name="dateDelivrance" required>
+                        </div>
 
-        <h2>Visa transformable actuel</h2>
-        <div class="form-group">
-            <label for="referenceVisa">Référence:</label>
-            <input type="text" id="referenceVisa" name="referenceVisa" required>
-        </div>
+                        <div class="form-group">
+                            <label for="dateExpiration">Date d'expiration <span style="color: var(--danger-color);">*</span></label>
+                            <input type="date" id="dateExpiration" name="dateExpiration" required>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="form-group">
-            <label for="dateEntree">Date d'entrée:</label>
-            <input type="date" id="dateEntree" name="dateEntree" required>
-        </div>
+                <div class="card-section">
+                    <h4>🌍 Visa transformable actuel</h4>
+                    <div class="info-row">
+                        <div class="form-group">
+                            <label for="referenceVisa">Référence <span style="color: var(--danger-color);">*</span></label>
+                            <input type="text" id="referenceVisa" name="referenceVisa" required>
+                        </div>
 
-        <div class="form-group">
-            <label for="dateFin">Date de fin:</label>
-            <input type="date" id="dateFin" name="dateFin" required>
-        </div>
+                        <div class="form-group">
+                            <label for="lieuEntree">Lieu d'entrée <span style="color: var(--danger-color);">*</span></label>
+                            <input type="text" id="lieuEntree" name="lieuEntree" required>
+                        </div>
+                    </div>
 
-        <div class="form-group">
-            <label for="lieuEntree">Lieu d'entrée:</label>
-            <input type="text" id="lieuEntree" name="lieuEntree" required>
-        </div>
+                    <div class="info-row">
+                        <div class="form-group">
+                            <label for="dateEntree">Date d'entrée <span style="color: var(--danger-color);">*</span></label>
+                            <input type="date" id="dateEntree" name="dateEntree" required>
+                        </div>
 
-        <h2>Type de Visa demandé</h2>
-        <div class="form-group">
-            <label for="visaType">Type de visa demandé:</label>
-            <select id="visaType" name="visaType" required>
-                <option value="">Sélectionnez</option>
-            </select>
-        </div>
+                        <div class="form-group">
+                            <label for="dateFin">Date de fin <span style="color: var(--danger-color);">*</span></label>
+                            <input type="date" id="dateFin" name="dateFin" required>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- working  -->
-        <h2>Pièces justificatives requises</h2>
-        <div id="piecesContainer" class="pieces-container">
-            <!-- Les pièces seront ajoutées dynamiquement ici -->
-        </div>
+                <div class="card-section">
+                    <h4>✈️ Type de Visa demandé</h4>
+                    <div class="form-group">
+                        <label for="visaType">Type de visa demandé <span style="color: var(--danger-color);">*</span></label>
+                        <select id="visaType" name="visaType" required>
+                            <option value="">Sélectionnez</option>
+                        </select>
+                    </div>
+                </div>
 
-        <button type="submit">Enregistrer</button>    
-    </form>
+                <div class="card-section">
+                    <h4>📄 Pièces justificatives requises</h4>
+                    <div id="piecesContainer" class="pieces-container">
+                        <!-- Les pièces seront ajoutées dynamiquement ici -->
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="window.location.href='/'">
+                        ← Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-large">
+                        💾 Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="/js/callApi.js"></script>
     <script>
         // Stockage des données
         let donneesFormulaire = {};
 
+        // Fonction pour extraire les paramètres de l'URL
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                isDuplicata: params.get('duplicata') === 'true',
+                visaReference: params.get('visa_reference'),
+                visaType: params.get('visa_type')
+            };
+        }
+
         // Charger les données au chargement de la page
         document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = getUrlParams();
+            
+            // Définir le flag duplicata
+            if (urlParams.isDuplicata) {
+                document.getElementById('isDuplicata').value = 'true';
+            }
+
             chargerDonneesFormulaire();
+
+            // Si c'est un duplicata avec un type de visa spécifié, le pré-sélectionner
+            if (urlParams.isDuplicata && urlParams.visaType) {
+                setTimeout(() => {
+                    const select = document.getElementById('visaType');
+                    select.value = urlParams.visaType;
+                    afficherPiecesParTypeVisa();
+                }, 1000); // Attendre que le formulaire soit rempli
+            }
         });
 
         // Charger toutes les données du formulaire en une seule requête
@@ -270,6 +326,9 @@
             donnees.nationalite = donnees.nationalite && donnees.nationalite !== '' ? parseInt(donnees.nationalite, 10) : null;
             donnees.situationFamiliale = donnees.situationFamiliale && donnees.situationFamiliale !== '' ? parseInt(donnees.situationFamiliale, 10) : null;
             donnees.visaType = donnees.visaType && donnees.visaType !== '' ? parseInt(donnees.visaType, 10) : null;
+
+            // Convertir le flag duplicata en booléen
+            donnees.isDuplicata = donnees.isDuplicata === 'true';
 
             // Récupérer les pièces sélectionnées
             const piecesSelectionnees = Array.from(document.querySelectorAll('input[name="pieces"]:checked'))
