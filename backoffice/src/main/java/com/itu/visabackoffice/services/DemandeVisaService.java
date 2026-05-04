@@ -24,10 +24,16 @@ import com.itu.visabackoffice.repositories.VisaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import lombok.extern.slf4j.Slf4j;
 import java.util.Objects;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
 
 @Service
 @Slf4j
@@ -1241,6 +1247,100 @@ public class DemandeVisaService {
     } catch (Exception e) {
       log.error("Erreur enregistrement transfert visa: {}", e.getMessage(), e);
       throw new RuntimeException("Erreur lors de l'enregistrement du transfert: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Enregistre une nouvelle demande de visa avec upload de fichiers
+   * 
+   * @param demandeSaisie les données saisies du formulaire
+   * @param files les fichiers uploadés pour les pièces justificatives
+   * @return Demande créée
+   * @throws RuntimeException en cas d'erreur
+   */
+  @Transactional
+  public Demande enregistrerDemandeVisaAvecFichiers(DemandeVisaSaisieDTO demandeSaisie, Map<String, MultipartFile> files) {
+    log.info("Début enregistrement demande visa avec fichiers - Demandeur: {} {}", 
+        demandeSaisie.getNom(), demandeSaisie.getPrenom());
+
+    try {
+      // 1. Enregistrer la demande sans fichiers d'abord
+      Demande demande = enregistrerDemandeVisa(demandeSaisie);
+      log.info("Demande enregistrée avec l'ID: {}", demande.getId());
+
+      // 2. Créer le répertoire de stockage des fichiers s'il n'existe pas
+      String uploadDir = "src/main/resources/uploads/" + demande.getId();
+      Path uploadPath = Paths.get(uploadDir);
+      Files.createDirectories(uploadPath);
+      log.info("Répertoire de stockage créé: {}", uploadPath);
+
+      // 3. Sauvegarder les fichiers et mettre à jour les DemandePieceJustificative
+      if (files != null && !files.isEmpty()) {
+        log.info("Sauvegarde des fichiers pour la demande {}", demande.getId());
+        
+        for (Map.Entry<String, MultipartFile> entry : files.entrySet()) {
+          String key = entry.getKey();
+          MultipartFile file = entry.getValue();
+
+          if (file.isEmpty()) {
+            log.warn("Fichier vide pour la clé: {}", key);
+            continue;
+          }
+
+          // Extraire l'ID de la pièce justificative du nom du paramètre (piece_XXX)
+          if (!key.startsWith("piece_")) {
+            log.warn("Paramètre non reconnu: {}", key);
+            continue;
+          }
+
+          final Integer pieceId;
+          try {
+            pieceId = Integer.parseInt(key.substring(6));
+            log.debug("ID de pièce trouvé: {}", pieceId);
+          } catch (NumberFormatException e) {
+            log.warn("Impossible d'extraire l'ID de la pièce du paramètre: {}", key);
+            continue;
+          }
+
+          // Générer un nom de fichier unique
+          String originalFilename = file.getOriginalFilename();
+          String fileExtension = originalFilename != null && originalFilename.contains(".")
+              ? originalFilename.substring(originalFilename.lastIndexOf("."))
+              : ".pdf";
+          String filename = "piece_" + pieceId + "_" + System.currentTimeMillis() + fileExtension;
+
+          // Sauvegarder le fichier
+          Path filePath = uploadPath.resolve(filename);
+          Files.write(filePath, file.getBytes());
+          log.info("Fichier sauvegardé: {}", filePath);
+
+          // Mettre à jour l'enregistrement DemandePieceJustificative avec le chemin et nom du fichier
+          List<DemandePieceJustificative> demandePieces = demandePieceJustificativeRepository.findAll()
+              .stream()
+              .filter(dpj -> dpj.getDemande().getId().equals(demande.getId()) 
+                  && dpj.getPieceJustificative().getId().equals(pieceId))
+              .toList();
+
+          if (!demandePieces.isEmpty()) {
+            DemandePieceJustificative demandePiece = demandePieces.get(0);
+            demandePiece.setPath(filePath.toString());
+            demandePiece.setNomFichier(filename);
+            demandePiece.setDateAjout(LocalDateTime.now());
+            demandePieceJustificativeRepository.save(demandePiece);
+            log.info("DemandePieceJustificative mise à jour avec le fichier pour la pièce: {}", pieceId);
+          } else {
+            log.warn("DemandePieceJustificative non trouvée pour la demande {} et la pièce {}", 
+                demande.getId(), pieceId);
+          }
+        }
+      }
+
+      log.info("Enregistrement demande visa avec fichiers terminé avec succès");
+      return demande;
+
+    } catch (Exception e) {
+      log.error("Erreur lors de l'enregistrement de la demande avec fichiers: {}", e.getMessage(), e);
+      throw new RuntimeException("Erreur lors de l'enregistrement: " + e.getMessage(), e);
     }
   }
 }

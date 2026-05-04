@@ -5,6 +5,7 @@ import com.itu.visabackoffice.dto.DonneesDemandeVisaDTO;
 import com.itu.visabackoffice.dto.DemandeVisaSaisieDTO;
 import com.itu.visabackoffice.dto.DemandeVisaCplDTO;
 import java.util.List;
+import java.util.Map;
 import com.itu.visabackoffice.services.DemandeVisaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
@@ -66,16 +68,21 @@ public class DemandeVisaRestController {
   }
 
   /**
-   * Endpoint pour créer une nouvelle demande de visa
-   * @param demandeSaisie les données saisies du formulaire
+   * Endpoint pour créer une nouvelle demande de visa avec fichiers
+   * @param demandeData les données saisies du formulaire (multipart)
+   * @param files les fichiers des pièces justificatives
    * @return ApiResponse avec le résultat de la création
    */
-  @PostMapping("/demande-saisie-ajout")
-  public ResponseEntity<ApiResponse<Object>> ajouterDemandeVisa(@RequestBody DemandeVisaSaisieDTO demandeSaisie) {
+  @PostMapping(value = "/demande-saisie-ajout", consumes = "multipart/form-data")
+  public ResponseEntity<ApiResponse<Object>> ajouterDemandeVisa(
+      DemandeVisaSaisieDTO demandeData,
+      @RequestParam(value = "piece_", required = false) Map<String, MultipartFile> files) {
     try {
-      log.info("Création demande visa - Demandeur: {} {}", demandeSaisie.getNom(), demandeSaisie.getPrenom());
+      log.info("Création demande visa avec fichiers - Demandeur: {} {}", 
+          demandeData.getNom(), demandeData.getPrenom());
       
-      Object resultat = demandeVisaService.enregistrerDemandeVisa(demandeSaisie);
+      // Passer les données et fichiers au service
+      Object resultat = demandeVisaService.enregistrerDemandeVisaAvecFichiers(demandeData, files);
       
       ApiResponse<Object> response = ApiResponse.success(
           resultat,

@@ -476,80 +476,58 @@
           return;
         }
 
-        // Créer les checkboxes pour chaque pièce filtrée
+        // Créer les inputs file pour chaque pièce filtrée
         piecesParTypeVisa.forEach((piece) => {
           const div = document.createElement("div");
           div.className = "piece-item";
 
-          const input = document.createElement("input");
-          input.type = "checkbox";
-          input.id = "piece_" + piece.id;
-          input.name = "pieces";
-          input.value = piece.id;
-
           const label = document.createElement("label");
           label.htmlFor = "piece_" + piece.id;
+          label.className = "file-label";
           const libelle =
             piece.libelle ||
             piece.designation ||
             piece.nom ||
             "Pièce " + piece.id;
-          label.textContent = libelle;
+          label.textContent = libelle + " *";
 
-          div.appendChild(input);
+          const input = document.createElement("input");
+          input.type = "file";
+          input.id = "piece_" + piece.id;
+          input.name = "piece_" + piece.id;
+          input.dataset.pieceId = piece.id;
+          input.accept = ".pdf";
+          input.required = true;
+
           div.appendChild(label);
+          div.appendChild(input);
           piecesContainer.appendChild(div);
         });
       }
 
-      // Soumettre le formulaire en POST
+      // Soumettre le formulaire en POST avec fichiers
       document
         .getElementById("demandeVisaForm")
         .addEventListener("submit", function (e) {
           e.preventDefault();
 
-          // Récupérer les données du formulaire
+          // Créer un FormData qui contient tous les champs du formulaire
           const formData = new FormData(this);
-          const donnees = Object.fromEntries(formData);
 
-          console.log("Données brutes du formulaire:", donnees);
+          console.log("Données à enregistrer:", Object.fromEntries(formData));
+          console.log("Fichiers:", Array.from(formData.entries()).filter(e => e[0].startsWith("piece_")));
 
-          // Convertir les champs numériques en integers (avec validation)
-          donnees.genre =
-            donnees.genre && donnees.genre !== ""
-              ? parseInt(donnees.genre, 10)
-              : null;
-          donnees.nationalite =
-            donnees.nationalite && donnees.nationalite !== ""
-              ? parseInt(donnees.nationalite, 10)
-              : null;
-          donnees.situationFamiliale =
-            donnees.situationFamiliale && donnees.situationFamiliale !== ""
-              ? parseInt(donnees.situationFamiliale, 10)
-              : null;
-          donnees.visaType =
-            donnees.visaType && donnees.visaType !== ""
-              ? parseInt(donnees.visaType, 10)
-              : null;
-
-          // Convertir le flag duplicata en booléen
-          donnees.isDuplicata = donnees.isDuplicata === "true";
-
-          // Récupérer les pièces sélectionnées
-          const piecesSelectionnees = Array.from(
-            document.querySelectorAll('input[name="pieces"]:checked'),
-          ).map((checkbox) => parseInt(checkbox.value, 10));
-          donnees.pieces = piecesSelectionnees;
-
-          console.log("Données à enregistrer:", donnees);
-
-          // Appel POST
-          postApi("/demande-visa/demande-saisie-ajout", donnees)
-            .then((response) => {
+          // Appel POST avec fichiers et données directement
+          fetch("/demande-visa/demande-saisie-ajout", {
+            method: "POST",
+            body: formData
+          })
+            .then(response => response.json())
+            .then(response => {
               if (response.status === "success") {
                 alert("Demande enregistrée avec succès!");
                 console.log("Réponse:", response.data);
-                // Rediriger ou réinitialiser le formulaire si besoin
+                window.location.href = "/";
               } else {
                 alert("Erreur: " + response.message);
                 console.error("Erreur:", response.error);

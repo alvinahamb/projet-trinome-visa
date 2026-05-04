@@ -902,3 +902,45 @@ input[type="radio"] {
 
 .hidden { display: none; }
 .visible { display: block; }
+
+/* ============================================
+   File Input Styles
+   ============================================ */
+.piece-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.file-label {
+    display: block;
+    font-weight: 500;
+    color: var(--dark-text);
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.piece-item input[type="file"] {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: 2px dashed var(--primary-color);
+    border-radius: 4px;
+    background-color: #f0f4ff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--mid-text);
+    transition: var(--transition);
+}
+
+.piece-item input[type="file"]:hover {
+    border-color: var(--primary-dark);
+    background-color: #e6ebff;
+}
+
+.piece-item input[type="file"]:focus {
+    outline: none;
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
