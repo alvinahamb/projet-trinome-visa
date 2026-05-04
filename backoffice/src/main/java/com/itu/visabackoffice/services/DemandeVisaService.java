@@ -639,7 +639,7 @@ public class DemandeVisaService {
         historiqueStatutDemandeRepository.save(historique);
         log.info("Historique statut créé avec succès");
 
-        // Sauvegarder les DemandePieceJustificative
+        // Sauvegarder les DemandePieceJustificative si des pièces ont été choisies
         if (demandeSaisie.getPieces() != null && !demandeSaisie.getPieces().isEmpty()) {
           log.info("Sauvegarde des {} pièces justificatives", demandeSaisie.getPieces().size());
           for (Integer pieceId : demandeSaisie.getPieces()) {
@@ -676,6 +676,75 @@ public class DemandeVisaService {
     } catch (Exception e) {
       log.error("Erreur enregistrement demande: {}", e.getMessage(), e);
       throw new RuntimeException("Erreur lors de l'enregistrement: " + e.getMessage(), e);
+    }
+  }
+
+  private void sauvegarderFichiersPieces(Demande demande, Map<String, MultipartFile> files) {
+    if (demande == null || files == null || files.isEmpty()) {
+      return;
+    }
+
+    try {
+      String uploadDir = "src/main/resources/uploads/" + demande.getId();
+      Path uploadPath = Paths.get(uploadDir);
+      Files.createDirectories(uploadPath);
+      log.info("Répertoire de stockage créé: {}", uploadPath);
+
+      for (Map.Entry<String, MultipartFile> entry : files.entrySet()) {
+        String key = entry.getKey();
+        MultipartFile file = entry.getValue();
+
+        if (file == null || file.isEmpty()) {
+          log.warn("Fichier vide pour la clé: {}", key);
+          continue;
+        }
+
+        if (!key.startsWith("piece_")) {
+          log.warn("Paramètre non reconnu: {}", key);
+          continue;
+        }
+
+        final Integer pieceId;
+        try {
+          pieceId = Integer.parseInt(key.substring(6));
+        } catch (NumberFormatException e) {
+          log.warn("Impossible d'extraire l'ID de la pièce du paramètre: {}", key);
+          continue;
+        }
+
+        PieceJustificative pieceJustificative = pieceJustificativeRepository.findById(pieceId)
+            .orElseThrow(() -> new IllegalArgumentException("Pièce justificative non trouvée avec l'ID: " + pieceId));
+
+        if (demande.getTypeVisa() != null && pieceJustificative.getTypeVisa() != null
+            && !pieceJustificative.getTypeVisa().getId().equals(demande.getTypeVisa().getId())) {
+          throw new IllegalArgumentException(
+              "La pièce justificative (id: " + pieceId + ") n'est pas valide pour le type de visa sélectionné");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String fileExtension = originalFilename != null && originalFilename.contains(".")
+            ? originalFilename.substring(originalFilename.lastIndexOf("."))
+            : ".pdf";
+        String filename = "piece_" + pieceId + "_" + System.currentTimeMillis() + fileExtension;
+
+        Path filePath = uploadPath.resolve(filename);
+        Files.write(filePath, file.getBytes());
+        log.info("Fichier sauvegardé: {}", filePath);
+
+        DemandePieceJustificative demandePiece = demandePieceJustificativeRepository
+            .findByDemandeIdAndPieceJustificativeId(demande.getId(), pieceId)
+            .orElseGet(DemandePieceJustificative::new);
+
+        demandePiece.setDemande(demande);
+        demandePiece.setPieceJustificative(pieceJustificative);
+        demandePiece.setPath(filePath.toString());
+        demandePiece.setNomFichier(originalFilename != null && !originalFilename.isBlank() ? originalFilename : filename);
+        demandePiece.setDateAjout(LocalDateTime.now());
+        demandePieceJustificativeRepository.save(demandePiece);
+        log.info("DemandePieceJustificative enregistrée/mise à jour pour la pièce: {}", pieceId);
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Erreur lors de l'enregistrement des fichiers: " + e.getMessage(), e);
     }
   }
 
@@ -773,12 +842,27 @@ public class DemandeVisaService {
       // Récupérer le visa transformable lié à la demande
       VisaTransformable visaTransformable = resolveVisaTransformable(demande);
 
-      // Récupérer les pièces justificatives
-      List<String> pieces = demande.getPieceJustificatives() != null
-          ? demande.getPieceJustificatives().stream()
-              .map(dpj -> dpj.getPieceJustificative().getLibelle())
-              .collect(Collectors.toList())
-          : List.of();
+        // Récupérer les pièces justificatives depuis la table d'association
+        List<DemandePieceJustificative> piecesLiees = demandePieceJustificativeRepository
+          .findByDemandeId(demande.getId());
+
+        List<String> pieces = piecesLiees.stream()
+            .map(dpj -> dpj.getNomFichier() != null && !dpj.getNomFichier().isBlank()
+              ? dpj.getNomFichier()
+              : (dpj.getPieceJustificative() != null ? dpj.getPieceJustificative().getLibelle() : null))
+          .filter(Objects::nonNull)
+          .collect(Collectors.toList());
+
+        // Récupérer les IDs des lignes pour le téléchargement
+        List<Integer> piecesIds = piecesLiees.stream()
+          .map(DemandePieceJustificative::getId)
+          .collect(Collectors.toList());
+
+          // Récupérer les IDs des pièces justificatives liées au type de visa
+          List<Integer> piecesJustificativeIds = piecesLiees.stream()
+            .map(dpj -> dpj.getPieceJustificative() != null ? dpj.getPieceJustificative().getId() : null)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
 
       // Récupérer le dernier statut de la demande
       String statut = null;
@@ -820,10 +904,13 @@ public class DemandeVisaService {
           .lieuEntree(visaTransformable != null ? visaTransformable.getLieuEntree() : null)
           // Type de visa
           .visaType(demande.getTypeVisa() != null ? demande.getTypeVisa().getLibelle() : null)
+          .visaTypeId(demande.getTypeVisa() != null ? demande.getTypeVisa().getId() : null)
           // Statut de la demande
           .statut(statut)
           // Pièces justificatives
           .pieces(pieces)
+          .piecesIds(piecesIds)
+          .piecesJustificativeIds(piecesJustificativeIds)
           .build();
 
     } catch (Exception e) {
@@ -1268,72 +1355,8 @@ public class DemandeVisaService {
       Demande demande = enregistrerDemandeVisa(demandeSaisie);
       log.info("Demande enregistrée avec l'ID: {}", demande.getId());
 
-      // 2. Créer le répertoire de stockage des fichiers s'il n'existe pas
-      String uploadDir = "src/main/resources/uploads/" + demande.getId();
-      Path uploadPath = Paths.get(uploadDir);
-      Files.createDirectories(uploadPath);
-      log.info("Répertoire de stockage créé: {}", uploadPath);
-
-      // 3. Sauvegarder les fichiers et mettre à jour les DemandePieceJustificative
-      if (files != null && !files.isEmpty()) {
-        log.info("Sauvegarde des fichiers pour la demande {}", demande.getId());
-        
-        for (Map.Entry<String, MultipartFile> entry : files.entrySet()) {
-          String key = entry.getKey();
-          MultipartFile file = entry.getValue();
-
-          if (file.isEmpty()) {
-            log.warn("Fichier vide pour la clé: {}", key);
-            continue;
-          }
-
-          // Extraire l'ID de la pièce justificative du nom du paramètre (piece_XXX)
-          if (!key.startsWith("piece_")) {
-            log.warn("Paramètre non reconnu: {}", key);
-            continue;
-          }
-
-          final Integer pieceId;
-          try {
-            pieceId = Integer.parseInt(key.substring(6));
-            log.debug("ID de pièce trouvé: {}", pieceId);
-          } catch (NumberFormatException e) {
-            log.warn("Impossible d'extraire l'ID de la pièce du paramètre: {}", key);
-            continue;
-          }
-
-          // Générer un nom de fichier unique
-          String originalFilename = file.getOriginalFilename();
-          String fileExtension = originalFilename != null && originalFilename.contains(".")
-              ? originalFilename.substring(originalFilename.lastIndexOf("."))
-              : ".pdf";
-          String filename = "piece_" + pieceId + "_" + System.currentTimeMillis() + fileExtension;
-
-          // Sauvegarder le fichier
-          Path filePath = uploadPath.resolve(filename);
-          Files.write(filePath, file.getBytes());
-          log.info("Fichier sauvegardé: {}", filePath);
-
-          // Mettre à jour l'enregistrement DemandePieceJustificative avec le chemin et nom du fichier
-          List<DemandePieceJustificative> demandePieces = demandePieceJustificativeRepository.findAll()
-              .stream()
-              .filter(dpj -> dpj.getDemande().getId().equals(demande.getId()) 
-                  && dpj.getPieceJustificative().getId().equals(pieceId))
-              .toList();
-
-          if (!demandePieces.isEmpty()) {
-            DemandePieceJustificative demandePiece = demandePieces.get(0);
-            demandePiece.setPath(filePath.toString());
-            demandePiece.setNomFichier(filename);
-            demandePiece.setDateAjout(LocalDateTime.now());
-            demandePieceJustificativeRepository.save(demandePiece);
-            log.info("DemandePieceJustificative mise à jour avec le fichier pour la pièce: {}", pieceId);
-          } else {
-            log.warn("DemandePieceJustificative non trouvée pour la demande {} et la pièce {}", 
-                demande.getId(), pieceId);
-          }
-        }
-      }
+      // 2. Sauvegarder les fichiers et créer/mettre à jour les DemandePieceJustificative
+      sauvegarderFichiersPieces(demande, files);
 
       log.info("Enregistrement demande visa avec fichiers terminé avec succès");
       return demande;
@@ -1342,5 +1365,26 @@ public class DemandeVisaService {
       log.error("Erreur lors de l'enregistrement de la demande avec fichiers: {}", e.getMessage(), e);
       throw new RuntimeException("Erreur lors de l'enregistrement: " + e.getMessage(), e);
     }
+  }
+
+  @Transactional
+  public DemandeVisaCplDTO updateDemandeVisaAvecFichiers(Integer demandeId, DemandeVisaSaisieDTO demandeDTO,
+      Map<String, MultipartFile> files) {
+    updateDemandeVisa(demandeId, demandeDTO);
+    Demande demande = demandeRepository.findById(demandeId)
+        .orElseThrow(() -> new IllegalArgumentException("Demande non trouvée avec l'ID: " + demandeId));
+
+    sauvegarderFichiersPieces(demande, files);
+    return convertDemandeToDTO(demande);
+  }
+
+  /**
+   * Récupère les informations d'un fichier de pièce justificative
+   * @param pieceId l'ID de la pièce justificative
+   * @return les informations du fichier (chemin, nom)
+   */
+  public DemandePieceJustificative getPieceJustificativeInfo(Integer pieceId) {
+    return demandePieceJustificativeRepository.findById(pieceId)
+        .orElse(null);
   }
 }

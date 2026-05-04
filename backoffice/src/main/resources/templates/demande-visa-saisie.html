@@ -481,6 +481,11 @@
           const div = document.createElement("div");
           div.className = "piece-item";
 
+            const hiddenPiece = document.createElement("input");
+            hiddenPiece.type = "hidden";
+            hiddenPiece.name = "pieces";
+            hiddenPiece.value = piece.id;
+
           const label = document.createElement("label");
           label.htmlFor = "piece_" + piece.id;
           label.className = "file-label";
@@ -499,6 +504,7 @@
           input.accept = ".pdf";
           input.required = true;
 
+            div.appendChild(hiddenPiece);
           div.appendChild(label);
           div.appendChild(input);
           piecesContainer.appendChild(div);
@@ -514,10 +520,9 @@
           // Créer un FormData qui contient tous les champs du formulaire
           const formData = new FormData(this);
 
-          console.log("Données à enregistrer:", Object.fromEntries(formData));
-          console.log("Fichiers:", Array.from(formData.entries()).filter(e => e[0].startsWith("piece_")));
+          console.log("Données à enregistrer:", Object.fromEntries(formData.entries()));
 
-          // Appel POST avec fichiers et données directement
+          // Appel POST simple avec multipart/form-data
           fetch("/demande-visa/demande-saisie-ajout", {
             method: "POST",
             body: formData

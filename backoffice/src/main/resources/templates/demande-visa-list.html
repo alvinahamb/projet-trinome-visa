@@ -225,8 +225,13 @@
                         <h4>Pièces justificatives</h4>
                         <div class="pieces-list">
                 `;
-                demande.pieces.forEach(piece => {
-                    html += `<span class="piece-badge">${piece}</span>`;
+                demande.pieces.forEach((piece, index) => {
+                    const pieceId = demande.piecesIds && demande.piecesIds[index] ? demande.piecesIds[index] : null;
+                    if (pieceId) {
+                        html += `<span class="piece-badge">${piece} <a href="/demande-visa/download-piece/${pieceId}" class="download-link" title="Télécharger">📥</a></span>`;
+                    } else {
+                        html += `<span class="piece-badge">${piece}</span>`;
+                    }
                 });
                 html += `</div></div>`;
             }
@@ -365,7 +370,7 @@
                             <select class="edit-input" name="visaType">
                                 <option value="">Sélectionnez</option>
                                 ${donneesFormulaire.typesVisa ? donneesFormulaire.typesVisa.map(v => 
-                                    `<option value="${v.id}" ${v.libelle === demande.visaType ? 'selected' : ''}>${v.libelle}</option>`
+                                    `<option value="${v.id}" ${String(v.id) === String(demande.visaTypeId) ? 'selected' : ''}>${v.libelle}</option>`
                                 ).join('') : ''}
                             </select>
                         </div>
@@ -373,16 +378,7 @@
                     
                     <div class="demande-section">
                         <h4>Pièces justificatives</h4>
-                        <div class="pieces-container">
-                            ${donneesFormulaire.piecesJustificatives ? donneesFormulaire.piecesJustificatives.map(piece => {
-                                const isSelected = demande.pieces && demande.pieces.includes(piece.libelle) ? 'checked' : '';
-                                return `
-                                    <div class="piece-item">
-                                        <input type="checkbox" class="piece-checkbox" name="pieces" value="${piece.id}" ${isSelected}>
-                                        <label style="display: inline; margin-left: 5px; font-weight: normal;">${piece.libelle}</label>
-                                    </div>
-                                `;
-                            }).join('') : '<p>Aucune pièce disponible</p>'}
+                        <div class="pieces-container" id="pieces_container_${demande.id}">
                         </div>
                     </div>
                     
@@ -394,6 +390,9 @@
             `;
             
             div.innerHTML = html;
+
+            // Rendre les pièces uploadables selon le type de visa sélectionné
+            renderPiecesEdition(div, demande);
             
             // Ajouter l'événement du formulaire
             const form = div.querySelector(`#form_${demande.id}`);
@@ -401,23 +400,19 @@
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
                     const formData = new FormData(this);
-                    const donnees = Object.fromEntries(formData);
-                    
-                    // Convertir les champs numériques en integers
-                    donnees.genre = donnees.genre && donnees.genre !== '' ? parseInt(donnees.genre, 10) : null;
-                    donnees.nationalite = donnees.nationalite && donnees.nationalite !== '' ? parseInt(donnees.nationalite, 10) : null;
-                    donnees.situationFamiliale = donnees.situationFamiliale && donnees.situationFamiliale !== '' ? parseInt(donnees.situationFamiliale, 10) : null;
-                    donnees.visaType = donnees.visaType && donnees.visaType !== '' ? parseInt(donnees.visaType, 10) : null;
-                    
-                    // Récupérer les pièces sélectionnées
-                    const piecesSelectionnees = Array.from(div.querySelectorAll('input[name="pieces"]:checked'))
-                        .map(checkbox => parseInt(checkbox.value, 10));
-                    donnees.pieces = piecesSelectionnees;
-                    
-                    console.log('Données à enregistrer:', donnees);
-                    
-                    // Appel API pour enregistrer les modifications
-                    putApi(`/demande-visa/demande-update/${demande.id}`, donnees)
+                    console.log('Données à enregistrer:', Object.fromEntries(formData.entries()));
+
+                    // Appel API multipart pour enregistrer les modifications
+                    fetch(`/demande-visa/demande-update/${demande.id}`, {
+                        method: 'PUT',
+                        body: formData
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.json().then(err => Promise.reject(err));
+                            }
+                            return response.json();
+                        })
                         .then(response => {
                             if (response.status === 'success') {
                                 alert('Demande mise à jour avec succès!');
@@ -489,6 +484,54 @@
             const card = document.getElementById(demandeId);
             if (card) {
                 card.classList.remove('editing');
+            }
+        }
+
+        function renderPiecesEdition(card, demande) {
+            const container = card.querySelector(`#pieces_container_${demande.id}`);
+            const selectVisa = card.querySelector('select[name="visaType"]');
+
+            if (!container || !donneesFormulaire.piecesJustificatives) {
+                return;
+            }
+
+            const typeVisaId = selectVisa && selectVisa.value ? parseInt(selectVisa.value, 10) : demande.visaTypeId;
+            const piecesFiltrees = donneesFormulaire.piecesJustificatives.filter(piece => {
+                return piece.typeVisa && piece.typeVisa.id === typeVisaId;
+            });
+
+            const piecesActuelles = {};
+            if (demande.piecesJustificativeIds && demande.piecesIds && demande.pieces) {
+                demande.piecesJustificativeIds.forEach((pieceId, index) => {
+                    piecesActuelles[pieceId] = {
+                        demandePieceId: demande.piecesIds[index],
+                        nomFichier: demande.pieces[index]
+                    };
+                });
+            }
+
+            if (piecesFiltrees.length === 0) {
+                container.innerHTML = '<p>Aucune pièce disponible pour ce type de visa</p>';
+                return;
+            }
+
+            container.innerHTML = piecesFiltrees.map(piece => {
+                const infoPiece = piecesActuelles[piece.id];
+                const lienFichier = infoPiece ? `<a href="/demande-visa/download-piece/${infoPiece.demandePieceId}" target="_blank">${infoPiece.nomFichier}</a>` : '<span>Aucun fichier uploadé</span>';
+                return `
+                    <div class="piece-item">
+                        <input type="hidden" name="pieces" value="${piece.id}">
+                        <label class="file-label" for="piece_${piece.id}">${piece.libelle} *</label>
+                        <div style="margin: 6px 0 10px; font-size: 0.9rem;">
+                            ${lienFichier}
+                        </div>
+                        <input type="file" id="piece_${piece.id}" name="piece_${piece.id}" accept=".pdf" ${infoPiece ? '' : 'required'}>
+                    </div>
+                `;
+            }).join('');
+
+            if (selectVisa) {
+                selectVisa.onchange = () => renderPiecesEdition(card, demande);
             }
         }
     </script>
