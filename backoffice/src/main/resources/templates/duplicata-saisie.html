@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Demande de duplicata - Recherche et création de visa duplicata">
-    <title>Duplicata - VISA Backoffice</title>
+    <meta name="description" content="Demande de carte résident - Recherche et création de demande de carte résident">
+    <title>Demande de Carte Résident - VISA Backoffice</title>
     <link rel="stylesheet" th:href="@{/style/main.css}">
     <style>
         .duplicata-container {
@@ -202,23 +202,23 @@
 <body>
     <div class="duplicata-container">
         <div class="page-header" style="text-align: center; margin-bottom: 30px;">
-            <h1 class="page-title">🔄 Duplicata de Visa</h1>
-            <p class="page-subtitle">Recherchez le visa existant pour créer un duplicata</p>
+            <h1 class="page-title">🏠 Demande de Carte Résident</h1>
+            <p class="page-subtitle">Recherchez la carte résident existante pour créer une demande</p>
         </div>
 
         <!-- Section de recherche -->
         <div class="search-section">
-            <h3 style="margin-bottom: 15px;">Rechercher un Visa</h3>
+            <h3 style="margin-bottom: 15px;">Rechercher une Carte Résident</h3>
             <div class="search-group">
-                <input type="text" id="referenceInput" placeholder="Entrez la référence du VISA" />
-                <button onclick="rechercherVisa()">🔍 Rechercher</button>
+                <input type="text" id="referenceInput" placeholder="Entrez la référence de la Carte Résident" />
+                <button onclick="rechercherCarteResident()">🔍 Rechercher</button>
             </div>
             <div id="searchResult" class="search-result"></div>
             <div id="visaInfoContainer"></div>
             <div id="actionButtons"></div>
         </div>
 
-        <!-- Section de sélection du type de visa (si le visa n'est pas trouvé) -->
+        <!-- Section de sélection du type de visa (si la carte résident n'est pas trouvée) -->
         <div id="visaTypeSelection" class="visa-type-selection">
             <h3 style="margin-bottom: 15px;">Sélectionnez le type de Visa</h3>
             <div class="form-group">
@@ -228,20 +228,25 @@
                 </select>
             </div>
             <div class="form-actions">
-                <button type="button" class="btn-outline" onclick="annulerDuplicata()">← Annuler</button>
-                <button type="button" class="btn-primary" onclick="allerAuFormulaireAvecDuplicata()">Continuer →</button>
+                <button type="button" class="btn-outline" onclick="annulerDemande()">← Annuler</button>
+                <button type="button" class="btn-primary" onclick="allerAuFormulaireAvecDemande()">Continuer →</button>
             </div>
         </div>
     </div>
 
     <script src="/js/callApi.js"></script>
     <script>
-        let visaFoundData = null;
+        let carteResidentFoundData = null;
         let donneesFormulaire = {};
 
         // Charger les données du formulaire au démarrage
         document.addEventListener('DOMContentLoaded', function() {
             chargerDonneesFormulaire();
+            document.getElementById('referenceInput').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    rechercherCarteResident();
+                }
+            });
         });
 
         function chargerDonneesFormulaire() {
@@ -270,27 +275,27 @@
             }
         }
 
-        function rechercherVisa() {
+        function rechercherCarteResident() {
             const reference = document.getElementById('referenceInput').value.trim();
             
             if (!reference) {
-                afficherResultat('error', '❌ Veuillez entrer une référence de VISA');
+                afficherResultat('error', '❌ Veuillez entrer une référence de Carte Résident');
                 return;
             }
 
-            // Appel API pour chercher le visa
-            getApi(`/demande-visa/search?reference=${encodeURIComponent(reference)}`)
+            // Appel API pour chercher la carte résident
+            getApi(`/carte-resident/search?reference=${encodeURIComponent(reference)}`)
                 .then(response => {
                     if (response.status === 'success' && response.data) {
-                        visaFoundData = response.data;
-                        afficherResultat('success', '✅ Visa trouvé!');
-                        afficherInfosVisa(response.data);
+                        carteResidentFoundData = response.data;
+                        afficherResultat('success', '✅ Carte Résident trouvée!');
+                        afficherInfosCarteResident(response.data);
                         afficherBoutonsAction('found');
                         // Masquer la sélection du type de visa
                         document.getElementById('visaTypeSelection').classList.remove('show');
                     } else {
-                        visaFoundData = null;
-                        afficherResultat('error', '❌ Aucun visa trouvé avec cette référence');
+                        carteResidentFoundData = null;
+                        afficherResultat('error', '❌ Aucune Carte Résident trouvée avec cette référence');
                         afficherBoutonsAction('notfound');
                         // Afficher la sélection du type de visa
                         document.getElementById('visaTypeSelection').classList.add('show');
@@ -298,7 +303,7 @@
                 })
                 .catch(error => {
                     console.error('Erreur réseau:', error);
-                    visaFoundData = null;
+                    carteResidentFoundData = null;
                     afficherResultat('error', '❌ Erreur lors de la recherche. Veuillez réessayer.');
                     afficherBoutonsAction('notfound');
                     document.getElementById('visaTypeSelection').classList.add('show');
@@ -311,44 +316,44 @@
             resultDiv.textContent = message;
         }
 
-        function afficherInfosVisa(visa) {
+        function afficherInfosCarteResident(carteResident) {
             const container = document.getElementById('visaInfoContainer');
-            if (visa && Object.keys(visa).length > 0) {
+            if (carteResident && Object.keys(carteResident).length > 0) {
                 let html = '<div class="visa-info">';
                 
-                // Afficher les informations principales du visa
-                if (visa.referenceVisa) {
+                // Afficher les informations principales de la carte résident
+                if (carteResident.reference) {
                     html += `<div class="visa-info-row">
                         <span class="visa-info-label">Référence:</span>
-                        <span class="visa-info-value">${visa.referenceVisa}</span>
+                        <span class="visa-info-value">${carteResident.reference}</span>
                     </div>`;
                 }
                 
-                if (visa.nom) {
+                if (carteResident.nom) {
                     html += `<div class="visa-info-row">
-                        <span class="visa-info-label">Passager:</span>
-                        <span class="visa-info-value">${visa.nom} ${visa.prenom || ''}</span>
+                        <span class="visa-info-label">Titulaire:</span>
+                        <span class="visa-info-value">${carteResident.nom} ${carteResident.prenom || ''}</span>
                     </div>`;
                 }
                 
-                if (visa.visaType || visa.nomVisa) {
+                if (carteResident.dateDebut) {
                     html += `<div class="visa-info-row">
-                        <span class="visa-info-label">Type de Visa:</span>
-                        <span class="visa-info-value">${visa.visaType || visa.nomVisa}</span>
+                        <span class="visa-info-label">Date de début:</span>
+                        <span class="visa-info-value">${carteResident.dateDebut}</span>
                     </div>`;
                 }
                 
-                if (visa.dateEntree) {
-                    html += `<div class="visa-info-row">
-                        <span class="visa-info-label">Date d'entrée:</span>
-                        <span class="visa-info-value">${visa.dateEntree}</span>
-                    </div>`;
-                }
-                
-                if (visa.dateFin) {
+                if (carteResident.dateFin) {
                     html += `<div class="visa-info-row">
                         <span class="visa-info-label">Date de fin:</span>
-                        <span class="visa-info-value">${visa.dateFin}</span>
+                        <span class="visa-info-value">${carteResident.dateFin}</span>
+                    </div>`;
+                }
+
+                if (carteResident.lieuEntree) {
+                    html += `<div class="visa-info-row">
+                        <span class="visa-info-label">Lieu d'entrée:</span>
+                        <span class="visa-info-value">${carteResident.lieuEntree}</span>
                     </div>`;
                 }
                 
@@ -365,8 +370,8 @@
             if (state === 'found') {
                 container.innerHTML = `
                     <div class="action-buttons">
-                        <button class="btn-cancel" onclick="annulerDuplicata()">← Retour</button>
-                        <button class="btn-continue" onclick="allerAuFormulaireAvecVisa()">Créer le Duplicata →</button>
+                        <button class="btn-cancel" onclick="annulerDemande()">← Retour</button>
+                        <button class="btn-continue" onclick="allerAuFormulaireAvecCarteResident()">Créer Demande →</button>
                     </div>
                 `;
             } else {
@@ -374,19 +379,19 @@
             }
         }
 
-        function allerAuFormulaireAvecVisa() {
-            if (visaFoundData) {
-                // Créer une URL pour le formulaire de création avec les paramètres du visa
+        function allerAuFormulaireAvecCarteResident() {
+            if (carteResidentFoundData) {
+                // Créer une URL pour le formulaire de création avec les paramètres de la carte résident
                 const params = new URLSearchParams();
-                params.append('duplicata', 'true');
-                params.append('visa_reference', visaFoundData.referenceVisa || '');
+                params.append('carte_resident', 'true');
+                params.append('carte_reference', carteResidentFoundData.reference || '');
                 
                 // Rediriger vers le formulaire de création avec les paramètres
-                window.location.href = `/visa-saisie?${params.toString()}`;
+                window.location.href = `/demande-visa-saisie?${params.toString()}`;
             }
         }
 
-        function allerAuFormulaireAvecDuplicata() {
+        function allerAuFormulaireAvecDemande() {
             const visaTypeId = document.getElementById('visaTypeSelector').value;
             
             if (!visaTypeId) {
@@ -395,24 +400,15 @@
             }
 
             const params = new URLSearchParams();
-            params.append('duplicata', 'true');
+            params.append('carte_resident', 'true');
             params.append('visa_type', visaTypeId);
             
-            window.location.href = `/visa-saisie?${params.toString()}`;
+            window.location.href = `/demande-visa-saisie?${params.toString()}`;
         }
 
-        function annulerDuplicata() {
+        function annulerDemande() {
             window.location.href = '/';
         }
-
-        // Permettre la recherche avec la touche Entrée
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('referenceInput').addEventListener('keypress', function(event) {
-                if (event.key === 'Enter') {
-                    rechercherVisa();
-                }
-            });
-        });
     </script>
 </body>
 </html>

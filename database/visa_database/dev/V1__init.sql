@@ -41,6 +41,8 @@ CREATE TABLE pieces_justificatives (
     id_piece_justificative   SERIAL PRIMARY KEY,
     libelle                  VARCHAR(150) NOT NULL, 
     visa_types_id            INT NOT NULL,
+    est_obligatoire          BOOLEAN NOT NULL,
+
     CONSTRAINT fk_pieces_justificatives_visa_types
         FOREIGN KEY (visa_types_id)
         REFERENCES visa_types(id_visa_type)
@@ -116,7 +118,7 @@ CREATE TABLE demandes (
     date_demande             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     demandeur_id             INT NOT NULL,
-    type_visa_id             INT NOT NULL,
+    type_visa_id             INT NULL,
     type_demande_id          INT NOT NULL,
 
     observations             TEXT,
@@ -181,9 +183,14 @@ CREATE TABLE visas (
 
     date_debut              DATE NOT NULL,
     date_fin                DATE NOT NULL,
+    demande_id              INT NOT NULL,
 
     reference               VARCHAR(100) NOT NULL UNIQUE,
-    lieu_entree             VARCHAR(150)
+    lieu_entree             VARCHAR(150),
+
+    CONSTRAINT fk_visas_demande
+        FOREIGN KEY (demande_id)
+        REFERENCES demandes(id_demande)
 );
 
 CREATE TABLE cartes_resident (
@@ -191,7 +198,12 @@ CREATE TABLE cartes_resident (
 
     date_debut              DATE NOT NULL,
     date_fin                DATE NOT NULL,
+    demande_id              INT NOT NULL,
 
     reference               VARCHAR(100) NOT NULL UNIQUE,
-    lieu_entree             VARCHAR(150)
+    lieu_entree             VARCHAR(150),
+
+    CONSTRAINT fk_cartes_resident_demande
+        FOREIGN KEY (demande_id)
+        REFERENCES demandes(id_demande)
 );

@@ -13,38 +13,43 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class DemandeVisaSaisieDTO {
-    
-    // État civil
-    private String nom;
-    private String prenom;
-    private Integer genre;
-    private LocalDate dateNaissance;
-    private String lieuNaissance;
-    private String telephone;
-    private String email;
-    private String adresse;
-    private Integer nationalite;
-    private Integer situationFamiliale;
-    
-    // Passeport
-    private String numeroPasseport;
-    private LocalDate dateDelivrance;
-    private LocalDate dateExpiration;
-    private String paysDelivrance;
-    
-    // Visa transformable actuel
-    private String referenceVisa;
-    private LocalDate dateEntree;
-    private LocalDate dateFin;
-    private String lieuEntree;
-    
-    // Type de visa
-    private Integer visaType;
-    
-    // Duplicata flag - if true, will create 2 demandes (1 completed + 1 pending for duplicata)
-    @Default
-    private Boolean isDuplicata = false;
-    
-    // Pièces justificatives
-    private List<Integer> pieces;
+
+  // État civil
+  private String nom;
+  private String prenom;
+  private Integer genre;
+  private LocalDate dateNaissance;
+  private String lieuNaissance;
+  private String telephone;
+  private String email;
+  private String adresse;
+  private Integer nationalite;
+  private Integer situationFamiliale;
+
+  // Passeport
+  private String numeroPasseport;
+  private LocalDate dateDelivrance;
+  private LocalDate dateExpiration;
+  private String paysDelivrance;
+
+  // Visa transformable actuel
+  private String referenceVisa;
+  private LocalDate dateEntree;
+  private LocalDate dateFin;
+  private String lieuEntree;
+
+  // Type de visa
+  private Integer visaType;
+
+  // Duplicata flag - if true, will create 2 demandes (1 completed + 1 pending for
+  // duplicata)
+  @Default
+  private Boolean isDuplicata = false;
+
+  // Flag pour indiquer un transfert de visa (sans création de duplicata)
+  @Default
+  private Boolean isTransferVisa = false;
+
+  // Pièces justificatives
+  private List<Integer> pieces;
 }

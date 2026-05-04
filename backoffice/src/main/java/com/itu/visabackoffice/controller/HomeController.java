@@ -18,6 +18,11 @@ public class HomeController {
     return "demande-visa-saisie";
   }
 
+  @GetMapping("/demande-visa-saisie")
+  public String demandeVisaSaisieAlias() {
+    return "demande-visa-saisie";
+  }
+
   @GetMapping("/visa-list")
   public String demandeVisaList() {
     return "demande-visa-list";
@@ -31,5 +36,10 @@ public class HomeController {
   @GetMapping("/duplicata-saisie")
   public String duplicataSaisie() {
     return "duplicata-saisie";
+  }
+
+  @GetMapping("/transfert-visa-saisie")
+  public String transfertVisaSaisie() {
+    return "transfer-visa-saisie";
   }
 }
