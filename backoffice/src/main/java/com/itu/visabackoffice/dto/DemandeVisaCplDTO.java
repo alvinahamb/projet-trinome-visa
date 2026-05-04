@@ -50,6 +50,9 @@ public class DemandeVisaCplDTO {
     // Statut de la demande
     private String statut;
 
+    // ID du statut de la demande
+    private Integer statutId;
+
     // Pièces justificatives (libellés)
     private List<String> pieces;
     

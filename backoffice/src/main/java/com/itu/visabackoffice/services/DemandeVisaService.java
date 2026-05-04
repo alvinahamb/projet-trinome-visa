@@ -858,14 +858,15 @@ public class DemandeVisaService {
           .map(DemandePieceJustificative::getId)
           .collect(Collectors.toList());
 
-          // Récupérer les IDs des pièces justificatives liées au type de visa
-          List<Integer> piecesJustificativeIds = piecesLiees.stream()
-            .map(dpj -> dpj.getPieceJustificative() != null ? dpj.getPieceJustificative().getId() : null)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+        // Récupérer les IDs des pièces justificatives liées au type de visa
+        List<Integer> piecesJustificativeIds = piecesLiees.stream()
+          .map(dpj -> dpj.getPieceJustificative() != null ? dpj.getPieceJustificative().getId() : null)
+          .filter(Objects::nonNull)
+          .collect(Collectors.toList());
 
       // Récupérer le dernier statut de la demande
       String statut = null;
+      Integer statutId = null;
       if (demande.getHistoriques() != null && !demande.getHistoriques().isEmpty()) {
         // Récupérer le dernier historique (le plus récent)
         HistoriqueStatutDemande dernierHistorique = demande.getHistoriques()
@@ -874,6 +875,7 @@ public class DemandeVisaService {
             .orElse(null);
         if (dernierHistorique != null && dernierHistorique.getStatutDemande() != null) {
           statut = dernierHistorique.getStatutDemande().getLibelle();
+          statutId = dernierHistorique.getStatutDemande().getId();
         }
       }
 
@@ -907,6 +909,7 @@ public class DemandeVisaService {
           .visaTypeId(demande.getTypeVisa() != null ? demande.getTypeVisa().getId() : null)
           // Statut de la demande
           .statut(statut)
+          .statutId(statutId)
           // Pièces justificatives
           .pieces(pieces)
           .piecesIds(piecesIds)
@@ -1056,6 +1059,15 @@ public class DemandeVisaService {
       // Sauvegarder la demande
       demande = demandeRepository.saveAndFlush(demande);
       log.info("[INFO] Demande {} mise à jour avec succès", demandeId);
+
+        StatutDemande statutModifie = statutDemandeRepository.findById(2)
+          .orElseThrow(() -> new IllegalArgumentException("Statut modifié (id=2) non trouvé"));
+        HistoriqueStatutDemande historiqueModifie = new HistoriqueStatutDemande();
+        historiqueModifie.setDemande(demande);
+        historiqueModifie.setStatutDemande(statutModifie);
+        historiqueModifie.setCommentaire("Demande modifiée");
+        historiqueStatutDemandeRepository.save(historiqueModifie);
+        log.info("[INFO] Statut de la demande {} passé à 2 après modification", demandeId);
 
       // Convertir en DTO pour éviter les références circulaires
       return convertDemandeToDTO(demande);

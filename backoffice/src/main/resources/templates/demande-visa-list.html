@@ -104,7 +104,7 @@
             let html = `
                 <div class="demande-header">
                     <h3>Demande #${numero}</h3>
-                    <span class="status-badge ${getStatusClass(demande.statut)}">${formatNonNull(demande.statut)}</span>
+                    <span class="status-badge ${getStatusClass(demande.statut)}">${formatNonNull(demande.statut)}${demande.statutId ? ' (id ' + demande.statutId + ')' : ''}</span>
                 </div>
                 
                 <div class="display-mode">
@@ -238,11 +238,20 @@
             
             html += `</div>`;            
             // Bouton Modifier en mode affichage
-            html += `
-                <div class="display-mode" style="text-align: right; margin-top: 15px;">
-                    <button type="button" class="btn btn-outline" onclick="activerEdition('demande_${demande.id}')">✏️ Modifier</button>
-                </div>
-            `;            
+            if (demande.statutId === 1) {
+                html += `
+                    <div class="display-mode" style="text-align: right; margin-top: 15px;">
+                        <button type="button" class="btn btn-outline" onclick="activerEdition('demande_${demande.id}')">✏️ Modifier</button>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="display-mode" style="text-align: right; margin-top: 15px; color: var(--text-muted);">
+                        Modification impossible pour ce statut.
+                    </div>
+                `;
+            }
+
             // Mode édition
             html += `
                 <form class="edit-mode" id="form_${demande.id}">
@@ -475,6 +484,11 @@
         function activerEdition(demandeId) {
             const card = document.getElementById(demandeId);
             if (card) {
+                const statutBadge = card.querySelector('.status-badge');
+                if (statutBadge && !statutBadge.textContent.includes('(id 1)')) {
+                    alert('Cette demande ne peut plus être modifiée.');
+                    return;
+                }
                 card.classList.add('editing');
             }
         }
