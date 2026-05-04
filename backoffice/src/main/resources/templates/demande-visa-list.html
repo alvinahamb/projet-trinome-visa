@@ -30,6 +30,32 @@
 
     <script src="/js/callApi.js"></script>
     <script>
+        const CHAMPS_OBLIGATOIRES = {
+            nom: true,
+            prenom: true,
+            genre: true,
+            dateNaissance: true,
+            lieuNaissance: false,
+            nationalite: true,
+            telephone: false,
+            email: false,
+            adresse: false,
+            situationFamiliale: false,
+            numeroPasseport: true,
+            paysDelivrance: false,
+            dateDelivrance: true,
+            dateExpiration: true,
+            referenceVisa: true,
+            dateEntree: false,
+            dateFin: false,
+            lieuEntree: false,
+            visaType: true
+        };
+
+        function estChampObligatoire(nomChamp) {
+            return Boolean(CHAMPS_OBLIGATOIRES[nomChamp]);
+        }
+
         // Stockage des données
         let donneesFormulaire = {};
         
@@ -104,7 +130,7 @@
             let html = `
                 <div class="demande-header">
                     <h3>Demande #${numero}</h3>
-                    <span class="status-badge ${getStatusClass(demande.statut)}">${formatNonNull(demande.statut)}${demande.statutId ? ' (id ' + demande.statutId + ')' : ''}</span>
+                    <span class="status-badge ${getStatusClass(demande.statut)}">${formatNonNull(demande.statut)}</span>
                 </div>
                 
                 <div class="display-mode">
@@ -238,7 +264,7 @@
             
             html += `</div>`;            
             // Bouton Modifier en mode affichage
-            if (demande.statutId === 1) {
+            if ((demande.statut || '').toUpperCase() === 'CREE') {
                 html += `
                     <div class="display-mode" style="text-align: right; margin-top: 15px;">
                         <button type="button" class="btn btn-outline" onclick="activerEdition('demande_${demande.id}')">✏️ Modifier</button>
@@ -402,6 +428,7 @@
 
             // Rendre les pièces uploadables selon le type de visa sélectionné
             renderPiecesEdition(div, demande);
+            appliquerContraintesEdition(div);
             
             // Ajouter l'événement du formulaire
             const form = div.querySelector(`#form_${demande.id}`);
@@ -485,7 +512,7 @@
             const card = document.getElementById(demandeId);
             if (card) {
                 const statutBadge = card.querySelector('.status-badge');
-                if (statutBadge && !statutBadge.textContent.includes('(id 1)')) {
+                if (statutBadge && statutBadge.textContent.trim().toUpperCase() !== 'CREE') {
                     alert('Cette demande ne peut plus être modifiée.');
                     return;
                 }
@@ -531,15 +558,16 @@
 
             container.innerHTML = piecesFiltrees.map(piece => {
                 const infoPiece = piecesActuelles[piece.id];
+                const estObligatoire = Boolean(piece.estObligatoire);
                 const lienFichier = infoPiece ? `<a href="/demande-visa/download-piece/${infoPiece.demandePieceId}" target="_blank">${infoPiece.nomFichier}</a>` : '<span>Aucun fichier uploadé</span>';
                 return `
                     <div class="piece-item">
                         <input type="hidden" name="pieces" value="${piece.id}">
-                        <label class="file-label" for="piece_${piece.id}">${piece.libelle} *</label>
+                        <label class="file-label" for="piece_${piece.id}">${piece.libelle}${estObligatoire ? ' *' : ' (optionnelle)'}</label>
                         <div style="margin: 6px 0 10px; font-size: 0.9rem;">
                             ${lienFichier}
                         </div>
-                        <input type="file" id="piece_${piece.id}" name="piece_${piece.id}" accept=".pdf" ${infoPiece ? '' : 'required'}>
+                        <input type="file" id="piece_${piece.id}" name="piece_${piece.id}" accept=".pdf" ${estObligatoire && !infoPiece ? 'required' : ''}>
                     </div>
                 `;
             }).join('');
@@ -547,6 +575,29 @@
             if (selectVisa) {
                 selectVisa.onchange = () => renderPiecesEdition(card, demande);
             }
+        }
+
+        function appliquerContraintesEdition(card) {
+            if (!card) {
+                return;
+            }
+
+            card.querySelectorAll("[name]").forEach((element) => {
+                const champ = element.getAttribute("name");
+                if (!champ || champ.startsWith("piece_")) {
+                    return;
+                }
+
+                if (element.type === 'file' || element.type === 'hidden' || element.type === 'checkbox') {
+                    return;
+                }
+
+                if (estChampObligatoire(champ)) {
+                    element.setAttribute("required", "required");
+                } else {
+                    element.removeAttribute("required");
+                }
+            });
         }
     </script>
     </div>
