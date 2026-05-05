@@ -1448,6 +1448,32 @@ public class DemandeVisaService {
     return convertDemandeToDTO(demande);
   }
 
+  @Transactional
+  public DemandeVisaCplDTO passerDemandeEnScanne(Integer demandeId) {
+    Demande demande = demandeRepository.findById(demandeId)
+        .orElseThrow(() -> new IllegalArgumentException("Demande non trouvée avec l'ID: " + demandeId));
+
+    List<HistoriqueStatutDemande> historiques = historiqueStatutDemandeRepository.findByDemandeId(demandeId);
+    HistoriqueStatutDemande dernierHistorique = historiques.stream()
+        .max((h1, h2) -> h1.getDateChangement().compareTo(h2.getDateChangement()))
+        .orElse(null);
+
+    if (dernierHistorique == null || dernierHistorique.getStatutDemande() == null
+        || !"CREE".equalsIgnoreCase(dernierHistorique.getStatutDemande().getLibelle())) {
+      throw new IllegalStateException("Seules les demandes au statut 'CREE' peuvent passer à 'SCANNE'");
+    }
+
+    StatutDemande statutScanne = getStatut("SCANNE");
+    HistoriqueStatutDemande historiqueScanne = new HistoriqueStatutDemande();
+    historiqueScanne.setDemande(demande);
+    historiqueScanne.setStatutDemande(statutScanne);
+    historiqueScanne.setCommentaire("Demande passée en SCANNE");
+    historiqueStatutDemandeRepository.save(historiqueScanne);
+
+    log.info("[INFO] Demande {} passée au statut SCANNE", demandeId);
+    return convertDemandeToDTO(demande);
+  }
+
   /**
    * Récupère les informations d'un fichier de pièce justificative
    * @param pieceId l'ID de la pièce justificative

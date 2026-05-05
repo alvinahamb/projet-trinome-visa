@@ -130,7 +130,7 @@
             let html = `
                 <div class="demande-header">
                     <h3>Demande #${numero}</h3>
-                    <span class="status-badge ${getStatusClass(demande.statut)}">${formatNonNull(demande.statut)}</span>
+                        <span class="status-badge ${getStatusClass(demande.statutId)}" data-statut-id="${formatNonNull(demande.statutId)}">${formatStatut(demande.statutId)}</span>
                 </div>
                 
                 <div class="display-mode">
@@ -263,17 +263,17 @@
             }
             
             html += `</div>`;            
-            // Bouton Modifier en mode affichage
-            if ((demande.statut || '').toUpperCase() === 'CREE') {
+            // Bouton d'action en mode affichage
+                if (String(demande.statutId) === '1') {
                 html += `
                     <div class="display-mode" style="text-align: right; margin-top: 15px;">
-                        <button type="button" class="btn btn-outline" onclick="activerEdition('demande_${demande.id}')">✏️ Modifier</button>
+                        <button type="button" class="btn btn-primary" onclick="passerDemandeEnScanne(${demande.id})">➡️ Mettre statut en 2</button>
                     </div>
                 `;
             } else {
                 html += `
                     <div class="display-mode" style="text-align: right; margin-top: 15px; color: var(--text-muted);">
-                        Modification impossible pour ce statut.
+                        Demande déjà traitée.
                     </div>
                 `;
             }
@@ -482,14 +482,15 @@
             return (value === null || value === undefined || value === '') ? '-' : value;
         }
         
+        function formatStatut(statutId) {
+            if (statutId === null || statutId === undefined || statutId === '') return '-';
+            return String(statutId);
+        }
+
         // Déterminer la classe CSS du statut
-        function getStatusClass(statut) {
-            if (!statut) return 'status-badge other';
-            const lowerStatut = statut.toLowerCase();
-            if (lowerStatut.includes('approuv')) return 'status-badge approuve';
-            if (lowerStatut.includes('rejet')) return 'status-badge rejete';
-            if (lowerStatut.includes('en cours')) return 'status-badge en-cours';
-            if (lowerStatut.includes('attent')) return 'status-badge en-attente';
+        function getStatusClass(statutId) {
+            if (String(statutId) === '1') return 'status-badge en-attente';
+            if (String(statutId) === '2') return 'status-badge en-cours';
             return 'status-badge other';
         }
 
@@ -512,7 +513,7 @@
             const card = document.getElementById(demandeId);
             if (card) {
                 const statutBadge = card.querySelector('.status-badge');
-                if (statutBadge && statutBadge.textContent.trim().toUpperCase() !== 'CREE') {
+                if (statutBadge && statutBadge.dataset.statutId !== '1') {
                     alert('Cette demande ne peut plus être modifiée.');
                     return;
                 }
@@ -526,6 +527,35 @@
             if (card) {
                 card.classList.remove('editing');
             }
+        }
+
+        function passerDemandeEnScanne(demandeId) {
+            if (!confirm('Passer cette demande au statut 2 ?')) {
+                return;
+            }
+
+            fetch(`/demande-visa/demande-scanne/${demandeId}`, {
+                method: 'PUT'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => Promise.reject(err));
+                    }
+                    return response.json();
+                })
+                .then(response => {
+                    if (response.status === 'success') {
+                        alert('Demande passée au statut 2 avec succès!');
+                        chargerListeDemandes();
+                    } else {
+                        alert('Erreur: ' + response.message);
+                        console.error('Erreur:', response.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur réseau:', error);
+                    alert('Erreur lors du changement de statut');
+                });
         }
 
         function renderPiecesEdition(card, demande) {

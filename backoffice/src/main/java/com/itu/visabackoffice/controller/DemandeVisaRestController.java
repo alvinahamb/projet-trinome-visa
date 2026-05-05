@@ -209,6 +209,50 @@ non je eids download les fichiers deja uploader   * @param demandeData les donn�
   }
 
   /**
+   * Endpoint pour faire passer une demande au statut SCANNE
+   * @param demandeId l'ID de la demande
+   * @return ApiResponse avec la demande mise à jour
+   */
+  @PutMapping("/demande-scanne/{id}")
+  public ResponseEntity<ApiResponse<DemandeVisaCplDTO>> passerDemandeEnScanne(
+      @PathVariable("id") Integer demandeId) {
+    try {
+      log.info("Passage de la demande {} au statut SCANNE", demandeId);
+
+      DemandeVisaCplDTO resultat = demandeVisaService.passerDemandeEnScanne(demandeId);
+
+      ApiResponse<DemandeVisaCplDTO> response = ApiResponse.success(
+          resultat,
+          "Demande passée au statut SCANNE avec succès"
+      );
+
+      return ResponseEntity.ok(response);
+
+    } catch (RuntimeException e) {
+      log.error("Erreur métier passage SCANNE: {}", e.getMessage());
+
+      ApiResponse<DemandeVisaCplDTO> response = ApiResponse.error(
+          400,
+          e.getMessage(),
+          "Erreur lors du passage au statut SCANNE"
+      );
+
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+
+    } catch (Exception e) {
+      log.error("Erreur inattendue passage SCANNE: {}", e.getMessage(), e);
+
+      ApiResponse<DemandeVisaCplDTO> response = ApiResponse.error(
+          500,
+          "Erreur serveur interne",
+          "Une erreur inattendue s'est produite"
+      );
+
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+  }
+
+  /**
    * Endpoint pour rechercher un VISA par sa référence - utilisé pour la fonctionnalité duplicata
    * @param reference la référence du visa
    * @return ApiResponse avec les informations du visa et du demandeur si trouvé
