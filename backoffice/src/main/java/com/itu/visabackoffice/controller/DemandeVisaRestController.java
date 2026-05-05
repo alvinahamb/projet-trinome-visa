@@ -4,6 +4,7 @@ import com.itu.visabackoffice.dto.ApiResponse;
 import com.itu.visabackoffice.dto.DonneesDemandeVisaDTO;
 import com.itu.visabackoffice.dto.DemandeVisaSaisieDTO;
 import com.itu.visabackoffice.dto.DemandeVisaCplDTO;
+import com.itu.visabackoffice.dto.DemandeurDemandesDTO;
 import java.util.List;
 import com.itu.visabackoffice.services.DemandeVisaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/demande-visa")
@@ -353,4 +355,6 @@ non je eids download les fichiers deja uploader   * @param demandeData les donn�
           .body("Erreur lors du téléchargement");
     }
   }
+
+  
 }

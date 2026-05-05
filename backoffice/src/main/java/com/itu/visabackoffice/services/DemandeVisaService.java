@@ -4,6 +4,8 @@ import com.itu.visabackoffice.dto.DonneesDemandeVisaDTO;
 import com.itu.visabackoffice.dto.DemandeVisaSaisieDTO;
 import com.itu.visabackoffice.dto.DemandeVisaCplDTO;
 import com.itu.visabackoffice.dto.TransfertVisaSaisieDTO;
+import com.itu.visabackoffice.dto.DemandeurDemandesDTO;
+import com.itu.visabackoffice.dto.DemandeurInfoDTO;
 import com.itu.visabackoffice.exceptions.ExpectedException;
 import com.itu.visabackoffice.models.*;
 import com.itu.visabackoffice.repositories.GenreRepository;
@@ -972,6 +974,77 @@ public class DemandeVisaService {
           demande != null ? demande.getId() : "UNKNOWN", e.getMessage());
       throw new RuntimeException("Erreur conversion: " + e.getMessage(), e);
     }
+  }
+
+  @Transactional(readOnly = true)
+  public DemandeurDemandesDTO getDemandeurAvecDemandesParNumero(String numero) {
+    if (numero == null || numero.trim().isEmpty()) {
+      throw new IllegalArgumentException("Le numero est obligatoire");
+    }
+
+    String trimmed = numero.trim();
+    boolean isPassport = trimmed.regionMatches(true, 0, "PASS", 0, 4);
+
+    Demandeur demandeur = null;
+
+    if (isPassport) {
+      String passeportNumero = trimmed.substring(4).trim();
+      if (!passeportNumero.isEmpty()) {
+        char firstChar = passeportNumero.charAt(0);
+        if (firstChar == '-' || firstChar == '_' || firstChar == ':') {
+          passeportNumero = passeportNumero.substring(1).trim();
+        }
+      }
+
+      if (passeportNumero.isEmpty()) {
+        throw new IllegalArgumentException("Numero de passeport invalide");
+      }
+
+      Passeport passeport = passeportRepository.findByNumero(passeportNumero).orElse(null);
+      if (passeport != null) {
+        demandeur = passeport.getDemandeur();
+      }
+    } else {
+      Integer demandeId;
+      try {
+        demandeId = Integer.parseInt(trimmed);
+      } catch (NumberFormatException e) {
+        throw new IllegalArgumentException("Numero de demande invalide");
+      }
+
+      Demande demande = demandeRepository.findById(demandeId).orElse(null);
+      if (demande != null) {
+        demandeur = demande.getDemandeur();
+      }
+    }
+
+    if (demandeur == null) {
+      return null;
+    }
+
+    List<DemandeVisaCplDTO> demandes = demandeRepository.findByDemandeurId(demandeur.getId()).stream()
+        .map(this::convertDemandeToDTO)
+        .collect(Collectors.toList());
+
+    DemandeurInfoDTO demandeurInfo = DemandeurInfoDTO.builder()
+        .id(demandeur.getId())
+        .nom(demandeur.getNom())
+        .prenom(demandeur.getPrenom())
+        .genre(demandeur.getGenre() != null ? demandeur.getGenre().getLibelle() : null)
+        .dateNaissance(demandeur.getDateNaissance())
+        .lieuNaissance(demandeur.getLieuNaissance())
+        .telephone(demandeur.getTelephone())
+        .email(demandeur.getEmail())
+        .adresse(demandeur.getAdresse())
+        .nationalite(demandeur.getNationalite() != null ? demandeur.getNationalite().getLibelle() : null)
+        .situationFamiliale(
+            demandeur.getSituationFamiliale() != null ? demandeur.getSituationFamiliale().getLibelle() : null)
+        .build();
+
+    return DemandeurDemandesDTO.builder()
+        .demandeur(demandeurInfo)
+        .demandes(demandes)
+        .build();
   }
 
   /**
