@@ -84,15 +84,9 @@
             <div class="info-row">
               <div class="form-group">
                 <label for="lieuNaissance"
-                  >Lieu de naissance
-                  <span style="color: var(--danger-color)">*</span></label
+                  >Lieu de naissance</label
                 >
-                <input
-                  type="text"
-                  id="lieuNaissance"
-                  name="lieuNaissance"
-                  required
-                />
+                <input type="text" id="lieuNaissance" name="lieuNaissance" />
               </div>
 
               <div class="form-group">
@@ -116,39 +110,31 @@
             <div class="info-row">
               <div class="form-group">
                 <label for="telephone"
-                  >Téléphone
-                  <span style="color: var(--danger-color)">*</span></label
+                  >Téléphone</label
                 >
-                <input type="tel" id="telephone" name="telephone" required />
+                <input type="tel" id="telephone" name="telephone" />
               </div>
 
               <div class="form-group">
                 <label for="email"
-                  >Email
-                  <span style="color: var(--danger-color)">*</span></label
+                  >Email</label
                 >
-                <input type="email" id="email" name="email" required />
+                <input type="email" id="email" name="email" />
               </div>
             </div>
 
             <div class="form-group">
               <label for="adresse"
-                >Adresse
-                <span style="color: var(--danger-color)">*</span></label
+                >Adresse</label
               >
-              <input type="text" id="adresse" name="adresse" required />
+              <input type="text" id="adresse" name="adresse" />
             </div>
 
             <div class="form-group">
               <label for="situationFamiliale"
-                >Situation familiale
-                <span style="color: var(--danger-color)">*</span></label
+                >Situation familiale</label
               >
-              <select
-                id="situationFamiliale"
-                name="situationFamiliale"
-                required
-              >
+              <select id="situationFamiliale" name="situationFamiliale">
                 <option value="">Sélectionnez</option>
               </select>
             </div>
@@ -162,54 +148,33 @@
                   >Numéro du passeport
                   <span style="color: var(--danger-color)">*</span></label
                 >
-                <input
-                  type="text"
-                  id="numeroPasseport"
-                  name="numeroPasseport"
-                  required
-                />
+                <input type="text" id="numeroPasseport" name="numeroPasseport" required />
               </div>
 
               <div class="form-group">
                 <label for="paysDelivrance"
-                  >Pays de délivrance
-                  <span style="color: var(--danger-color)">*</span></label
+                  >Pays de délivrance</label
                 >
-                <input
-                  type="text"
-                  id="paysDelivrance"
-                  name="paysDelivrance"
-                  required
-                />
+                <input type="text" id="paysDelivrance" name="paysDelivrance" />
               </div>
             </div>
 
             <div class="info-row">
               <div class="form-group">
-                <label for="dateDelivrance"
-                  >Date de délivrance
-                  <span style="color: var(--danger-color)">*</span></label
-                >
-                <input
-                  type="date"
-                  id="dateDelivrance"
-                  name="dateDelivrance"
-                  required
-                />
+                <label for="dateDelivrance">Date de délivrance <span style="color: var(--danger-color)">*</span></label>
+                <input type="date" id="dateDelivrance" name="dateDelivrance" required />
               </div>
 
               <div class="form-group">
-                <label for="dateExpiration"
-                  >Date d'expiration
-                  <span style="color: var(--danger-color)">*</span></label
-                >
-                <input
-                  type="date"
-                  id="dateExpiration"
-                  name="dateExpiration"
-                  required
-                />
+                <label for="dateExpiration">Date d'expiration <span style="color: var(--danger-color)">*</span></label>
+                <input type="date" id="dateExpiration" name="dateExpiration" required />
               </div>
+            </div>
+
+            
+            <div class="form-group">
+              <label for="lieuEntree">Lieu d'entrée</label>
+              <input type="text" id="lieuEntree" name="lieuEntree" />
             </div>
           </div>
 
@@ -219,46 +184,30 @@
               <div class="form-group">
                 <label for="referenceVisa"
                   >Référence
-                  <span style="color: var(--danger-color)">*</span></label
-                >
-                <input
-                  type="text"
-                  id="referenceVisa"
-                  name="referenceVisa"
-                  required
-                />
-              </div>
-
-              <div class="form-group">
-                <label for="lieuEntree"
-                  >Lieu d'entrée
-                  <span style="color: var(--danger-color)">*</span></label
-                >
-                <input type="text" id="lieuEntree" name="lieuEntree" required />
-              </div>
+                  <span style="color: var(--danger-color)">*</span></label>
+                <input type="text" id="referenceVisa" name="referenceVisa" required />
+              </div>              
             </div>
+            <div class="info-row">
+                <div class="form-group">
+                  <label for="dateEntree">Date d'entrée</label>
+                  <input type="date" id="dateEntree" name="dateEntree" />
+                </div>
 
+                <div class="form-group">
+                  <label for="dateFin">Date de fin</label>
+                  <input type="date" id="dateFin" name="dateFin" />
+                </div>
+              </div>
             <div class="info-row">
               <div class="form-group">
-                <label for="dateEntree"
-                  >Date d'entrée
-                  <span style="color: var(--danger-color)">*</span></label
-                >
-                <input type="date" id="dateEntree" name="dateEntree" required />
-              </div>
-
-              <div class="form-group">
-                <label for="dateFin"
-                  >Date de fin
-                  <span style="color: var(--danger-color)">*</span></label
-                >
-                <input type="date" id="dateFin" name="dateFin" required />
+                <label for="lieuEntree">Lieu d'entrée</label>
+                <input type="text" id="lieuEntree" name="lieuEntree" />
               </div>
             </div>
           </div>
 
           <div class="card-section">
-            <h4>✈️ Type de Visa demandé</h4>
             <div class="form-group">
               <label for="visaType"
                 >Type de visa demandé
@@ -268,9 +217,6 @@
                 <option value="">Sélectionnez</option>
               </select>
             </div>
-          </div>
-
-          <div class="card-section">
             <h4>📄 Pièces justificatives requises</h4>
             <div id="piecesContainer" class="pieces-container">
               <!-- Les pièces seront ajoutées dynamiquement ici -->
@@ -295,6 +241,52 @@
 
     <script src="/js/callApi.js"></script>
     <script>
+      const CHAMPS_OBLIGATOIRES = {
+        nom: true,
+        prenom: true,
+        genre: true,
+        dateNaissance: true,
+        lieuNaissance: false,
+        nationalite: true,
+        telephone: false,
+        email: false,
+        adresse: false,
+        situationFamiliale: false,
+        numeroPasseport: true,
+        paysDelivrance: false,
+        dateDelivrance: true,
+        dateExpiration: true,
+        referenceVisa: true,
+        dateEntree: false,
+        dateFin: false,
+        lieuEntree: false,
+        visaType: true
+      };
+
+      function estChampObligatoire(nomChamp) {
+        return Boolean(CHAMPS_OBLIGATOIRES[nomChamp]);
+      }
+
+      function appliquerContraintesCreation() {
+        const form = document.getElementById("demandeVisaForm");
+        if (!form) {
+          return;
+        }
+
+        form.querySelectorAll("[name]").forEach((element) => {
+          const champ = element.getAttribute("name");
+          if (!champ || champ.startsWith("piece_")) {
+            return;
+          }
+
+          if (estChampObligatoire(champ)) {
+            element.setAttribute("required", "required");
+          } else {
+            element.removeAttribute("required");
+          }
+        });
+      }
+
       // Stockage des données
       let donneesFormulaire = {};
 
@@ -405,6 +397,8 @@
         document
           .getElementById("visaType")
           .addEventListener("change", afficherPiecesParTypeVisa);
+
+        appliquerContraintesCreation();
       }
 
       // Fonction générique pour remplir un select
@@ -476,80 +470,64 @@
           return;
         }
 
-        // Créer les checkboxes pour chaque pièce filtrée
+        // Créer les inputs file pour chaque pièce filtrée
         piecesParTypeVisa.forEach((piece) => {
           const div = document.createElement("div");
           div.className = "piece-item";
 
-          const input = document.createElement("input");
-          input.type = "checkbox";
-          input.id = "piece_" + piece.id;
-          input.name = "pieces";
-          input.value = piece.id;
+            const hiddenPiece = document.createElement("input");
+            hiddenPiece.type = "hidden";
+            hiddenPiece.name = "pieces";
+            hiddenPiece.value = piece.id;
 
           const label = document.createElement("label");
           label.htmlFor = "piece_" + piece.id;
+          label.className = "file-label";
           const libelle =
             piece.libelle ||
             piece.designation ||
             piece.nom ||
             "Pièce " + piece.id;
-          label.textContent = libelle;
+          const estObligatoire = Boolean(piece.estObligatoire);
+          label.textContent = libelle + (estObligatoire ? " *" : " (optionnelle)");
 
-          div.appendChild(input);
+          const input = document.createElement("input");
+          input.type = "file";
+          input.id = "piece_" + piece.id;
+          input.name = "piece_" + piece.id;
+          input.dataset.pieceId = piece.id;
+          input.accept = ".pdf";
+          input.required = estObligatoire;
+
+            div.appendChild(hiddenPiece);
           div.appendChild(label);
+          div.appendChild(input);
           piecesContainer.appendChild(div);
         });
       }
 
-      // Soumettre le formulaire en POST
+      // Soumettre le formulaire en POST avec fichiers
       document
         .getElementById("demandeVisaForm")
         .addEventListener("submit", function (e) {
           e.preventDefault();
 
-          // Récupérer les données du formulaire
+          // Créer un FormData qui contient tous les champs du formulaire
           const formData = new FormData(this);
-          const donnees = Object.fromEntries(formData);
 
-          console.log("Données brutes du formulaire:", donnees);
+          console.log("Données à enregistrer:", Object.fromEntries(formData.entries()));
 
-          // Convertir les champs numériques en integers (avec validation)
-          donnees.genre =
-            donnees.genre && donnees.genre !== ""
-              ? parseInt(donnees.genre, 10)
-              : null;
-          donnees.nationalite =
-            donnees.nationalite && donnees.nationalite !== ""
-              ? parseInt(donnees.nationalite, 10)
-              : null;
-          donnees.situationFamiliale =
-            donnees.situationFamiliale && donnees.situationFamiliale !== ""
-              ? parseInt(donnees.situationFamiliale, 10)
-              : null;
-          donnees.visaType =
-            donnees.visaType && donnees.visaType !== ""
-              ? parseInt(donnees.visaType, 10)
-              : null;
-
-          // Convertir le flag duplicata en booléen
-          donnees.isDuplicata = donnees.isDuplicata === "true";
-
-          // Récupérer les pièces sélectionnées
-          const piecesSelectionnees = Array.from(
-            document.querySelectorAll('input[name="pieces"]:checked'),
-          ).map((checkbox) => parseInt(checkbox.value, 10));
-          donnees.pieces = piecesSelectionnees;
-
-          console.log("Données à enregistrer:", donnees);
-
-          // Appel POST
-          postApi("/demande-visa/demande-saisie-ajout", donnees)
-            .then((response) => {
+          // Appel POST simple avec multipart/form-data
+          fetch("/demande-visa/demande-saisie-ajout", {
+            method: "POST",
+            body: formData
+          })
+            .then(response => response.json())
+            .then(response => {
               if (response.status === "success") {
                 alert("Demande enregistrée avec succès!");
                 console.log("Réponse:", response.data);
-                // Rediriger ou réinitialiser le formulaire si besoin
+                window.location.href = "/";
               } else {
                 alert("Erreur: " + response.message);
                 console.error("Erreur:", response.error);

@@ -24,10 +24,17 @@ import com.itu.visabackoffice.repositories.VisaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import lombok.extern.slf4j.Slf4j;
 import java.util.Objects;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 @Slf4j
@@ -160,6 +167,46 @@ public class DemandeVisaService {
     }
   }
 
+  private void validerChampObligatoire(String valeur, String libelle) {
+    if (valeur == null || valeur.trim().isEmpty()) {
+      throw new IllegalArgumentException(libelle + " est obligatoire");
+    }
+  }
+
+  private void validerChampObligatoire(Integer valeur, String libelle) {
+    if (valeur == null) {
+      throw new IllegalArgumentException(libelle + " est obligatoire");
+    }
+  }
+
+  private void validerChampObligatoire(LocalDate valeur, String libelle) {
+    if (valeur == null) {
+      throw new IllegalArgumentException(libelle + " est obligatoire");
+    }
+  }
+
+  private StatutDemande getStatut(String libelle) {
+    return statutDemandeRepository.findByLibelleIgnoreCase(libelle)
+        .orElseThrow(() -> new IllegalArgumentException("Statut '" + libelle + "' non trouvé"));
+  }
+
+  private void validerChampsObligatoiresCreation(DemandeVisaSaisieDTO demandeSaisie) {
+    validerChampObligatoire(demandeSaisie.getNom(), "Le nom");
+    validerChampObligatoire(demandeSaisie.getPrenom(), "Le prénom");
+    validerChampObligatoire(demandeSaisie.getGenre(), "Le genre");
+    validerChampObligatoire(demandeSaisie.getDateNaissance(), "La date de naissance");
+    validerChampObligatoire(demandeSaisie.getNationalite(), "La nationalité");
+    validerChampObligatoire(demandeSaisie.getNumeroPasseport(), "Le numéro du passeport");
+    validerChampObligatoire(demandeSaisie.getDateDelivrance(), "La date de délivrance");
+    validerChampObligatoire(demandeSaisie.getDateExpiration(), "La date d'expiration");
+    validerChampObligatoire(demandeSaisie.getReferenceVisa(), "La référence du visa");
+    validerChampObligatoire(demandeSaisie.getVisaType(), "Le type de visa");
+  }
+
+  private void validerChampsObligatoiresMiseAJour(DemandeVisaSaisieDTO demandeSaisie) {
+    validerChampsObligatoiresCreation(demandeSaisie);
+  }
+
   /**
    * Enregistre une demande de duplicata (2 demandes: original completed +
    * duplicata pending)
@@ -187,9 +234,8 @@ public class DemandeVisaService {
     demandeOriginal = demandeRepository.saveAndFlush(demandeOriginal);
     log.info("Demande originale sauvegardée avec l'ID: {}", demandeOriginal.getId());
 
-    // Créer l'historique avec statut COMPLETED (id=3)
-    StatutDemande statutCompleted = statutDemandeRepository.findById(3)
-        .orElseThrow(() -> new IllegalArgumentException("Statut COMPLETED (id=3) non trouvé"));
+    // Créer l'historique avec statut TERMINE
+    StatutDemande statutCompleted = getStatut("TERMINE");
     HistoriqueStatutDemande historiqueOriginal = new HistoriqueStatutDemande();
     historiqueOriginal.setDemande(demandeOriginal);
     historiqueOriginal.setStatutDemande(statutCompleted);
@@ -254,9 +300,8 @@ public class DemandeVisaService {
     demandeDuplicata = demandeRepository.saveAndFlush(demandeDuplicata);
     log.info("Demande duplicata sauvegardée avec l'ID: {}", demandeDuplicata.getId());
 
-    // Créer l'historique avec statut PENDING (id=1)
-    StatutDemande statutInitial = statutDemandeRepository.findById(1)
-        .orElseThrow(() -> new IllegalArgumentException("Statut initial (id=1) non trouvé"));
+    // Créer l'historique avec statut CREE
+    StatutDemande statutInitial = getStatut("CREE");
     HistoriqueStatutDemande historiqueDuplicata = new HistoriqueStatutDemande();
     historiqueDuplicata.setDemande(demandeDuplicata);
     historiqueDuplicata.setStatutDemande(statutInitial);
@@ -457,30 +502,7 @@ public class DemandeVisaService {
       // ========== VALIDATION DES DONNÉES ==========
       log.info("Validation des données de la demande");
 
-      if (demandeSaisie.getNom() == null || demandeSaisie.getNom().isEmpty()) {
-        log.error("Le nom est manquant");
-        throw new IllegalArgumentException("Le nom est obligatoire");
-      }
-
-      if (demandeSaisie.getPrenom() == null || demandeSaisie.getPrenom().isEmpty()) {
-        log.error("Le prénom est manquant");
-        throw new IllegalArgumentException("Le prénom est obligatoire");
-      }
-
-      if (demandeSaisie.getGenre() == null) {
-        log.error("Le genre est manquant");
-        throw new IllegalArgumentException("Le genre est obligatoire");
-      }
-
-      if (demandeSaisie.getDateNaissance() == null) {
-        log.error("La date de naissance est manquante");
-        throw new IllegalArgumentException("La date de naissance est obligatoire");
-      }
-
-      if (demandeSaisie.getVisaType() == null) {
-        log.error("Le type de visa est manquant");
-        throw new IllegalArgumentException("Le type de visa est obligatoire");
-      }
+      validerChampsObligatoiresCreation(demandeSaisie);
 
       // Validation des dates du passeport
       if (demandeSaisie.getDateExpiration() != null && demandeSaisie.getDateDelivrance() != null) {
@@ -633,7 +655,7 @@ public class DemandeVisaService {
         historiqueStatutDemandeRepository.save(historique);
         log.info("Historique statut créé avec succès");
 
-        // Sauvegarder les DemandePieceJustificative
+        // Sauvegarder les DemandePieceJustificative si des pièces ont été choisies
         if (demandeSaisie.getPieces() != null && !demandeSaisie.getPieces().isEmpty()) {
           log.info("Sauvegarde des {} pièces justificatives", demandeSaisie.getPieces().size());
           for (Integer pieceId : demandeSaisie.getPieces()) {
@@ -670,6 +692,111 @@ public class DemandeVisaService {
     } catch (Exception e) {
       log.error("Erreur enregistrement demande: {}", e.getMessage(), e);
       throw new RuntimeException("Erreur lors de l'enregistrement: " + e.getMessage(), e);
+    }
+  }
+
+  private void sauvegarderFichiersPieces(Demande demande, Map<String, MultipartFile> files) {
+    if (demande == null || files == null || files.isEmpty()) {
+      return;
+    }
+
+    try {
+      String uploadDir = "src/main/resources/uploads/" + demande.getId();
+      Path uploadPath = Paths.get(uploadDir);
+      Files.createDirectories(uploadPath);
+      log.info("Répertoire de stockage créé: {}", uploadPath);
+
+      for (Map.Entry<String, MultipartFile> entry : files.entrySet()) {
+        String key = entry.getKey();
+        MultipartFile file = entry.getValue();
+
+        if (file == null || file.isEmpty()) {
+          log.warn("Fichier vide pour la clé: {}", key);
+          continue;
+        }
+
+        if (!key.startsWith("piece_")) {
+          log.warn("Paramètre non reconnu: {}", key);
+          continue;
+        }
+
+        final Integer pieceId;
+        try {
+          pieceId = Integer.parseInt(key.substring(6));
+        } catch (NumberFormatException e) {
+          log.warn("Impossible d'extraire l'ID de la pièce du paramètre: {}", key);
+          continue;
+        }
+
+        PieceJustificative pieceJustificative = pieceJustificativeRepository.findById(pieceId)
+            .orElseThrow(() -> new IllegalArgumentException("Pièce justificative non trouvée avec l'ID: " + pieceId));
+
+        if (demande.getTypeVisa() != null && pieceJustificative.getTypeVisa() != null
+            && !pieceJustificative.getTypeVisa().getId().equals(demande.getTypeVisa().getId())) {
+          throw new IllegalArgumentException(
+              "La pièce justificative (id: " + pieceId + ") n'est pas valide pour le type de visa sélectionné");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String fileExtension = originalFilename != null && originalFilename.contains(".")
+            ? originalFilename.substring(originalFilename.lastIndexOf("."))
+            : ".pdf";
+        String filename = "piece_" + pieceId + "_" + System.currentTimeMillis() + fileExtension;
+
+        Path filePath = uploadPath.resolve(filename);
+        Files.write(filePath, file.getBytes());
+        log.info("Fichier sauvegardé: {}", filePath);
+
+        DemandePieceJustificative demandePiece = demandePieceJustificativeRepository
+            .findByDemandeIdAndPieceJustificativeId(demande.getId(), pieceId)
+            .orElseGet(DemandePieceJustificative::new);
+
+        demandePiece.setDemande(demande);
+        demandePiece.setPieceJustificative(pieceJustificative);
+        demandePiece.setPath(filePath.toString());
+        demandePiece.setNomFichier(originalFilename != null && !originalFilename.isBlank() ? originalFilename : filename);
+        demandePiece.setDateAjout(LocalDateTime.now());
+        demandePieceJustificativeRepository.save(demandePiece);
+        log.info("DemandePieceJustificative enregistrée/mise à jour pour la pièce: {}", pieceId);
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Erreur lors de l'enregistrement des fichiers: " + e.getMessage(), e);
+    }
+  }
+
+  private void validerPiecesObligatoires(Demande demande, Map<String, MultipartFile> files) {
+    if (demande == null || demande.getTypeVisa() == null) {
+      return;
+    }
+
+    Integer demandeId = demande.getId();
+    Integer visaTypeId = demande.getTypeVisa().getId();
+
+    List<Integer> piecesObligatoires = pieceJustificativeRepository.findAll().stream()
+        .filter(piece -> piece.getTypeVisa() != null
+            && piece.getTypeVisa().getId().equals(visaTypeId)
+            && Boolean.TRUE.equals(piece.getEstObligatoire()))
+        .map(PieceJustificative::getId)
+        .collect(Collectors.toList());
+
+    for (Integer pieceId : piecesObligatoires) {
+      boolean fichierFourni = files != null && files.containsKey("piece_" + pieceId)
+          && files.get("piece_" + pieceId) != null
+          && !files.get("piece_" + pieceId).isEmpty();
+
+      boolean fichierExistant = false;
+      if (demandeId != null) {
+        fichierExistant = demandePieceJustificativeRepository
+            .findByDemandeIdAndPieceJustificativeId(demandeId, pieceId)
+            .map(dpj -> dpj.getPath() != null && !dpj.getPath().isBlank())
+            .orElse(false);
+      }
+
+      if (!fichierFourni && !fichierExistant) {
+        PieceJustificative piece = pieceJustificativeRepository.findById(pieceId).orElse(null);
+        String libelle = piece != null ? piece.getLibelle() : String.valueOf(pieceId);
+        throw new IllegalArgumentException("La pièce justificative obligatoire '" + libelle + "' doit être ajoutée");
+      }
     }
   }
 
@@ -767,23 +894,39 @@ public class DemandeVisaService {
       // Récupérer le visa transformable lié à la demande
       VisaTransformable visaTransformable = resolveVisaTransformable(demande);
 
-      // Récupérer les pièces justificatives
-      List<String> pieces = demande.getPieceJustificatives() != null
-          ? demande.getPieceJustificatives().stream()
-              .map(dpj -> dpj.getPieceJustificative().getLibelle())
-              .collect(Collectors.toList())
-          : List.of();
+        // Récupérer les pièces justificatives depuis la table d'association
+        List<DemandePieceJustificative> piecesLiees = demandePieceJustificativeRepository
+          .findByDemandeId(demande.getId());
 
-      // Récupérer le dernier statut de la demande
+        List<String> pieces = piecesLiees.stream()
+            .map(dpj -> dpj.getNomFichier() != null && !dpj.getNomFichier().isBlank()
+              ? dpj.getNomFichier()
+              : (dpj.getPieceJustificative() != null ? dpj.getPieceJustificative().getLibelle() : null))
+          .filter(Objects::nonNull)
+          .collect(Collectors.toList());
+
+        // Récupérer les IDs des lignes pour le téléchargement
+        List<Integer> piecesIds = piecesLiees.stream()
+          .map(DemandePieceJustificative::getId)
+          .collect(Collectors.toList());
+
+        // Récupérer les IDs des pièces justificatives liées au type de visa
+        List<Integer> piecesJustificativeIds = piecesLiees.stream()
+          .map(dpj -> dpj.getPieceJustificative() != null ? dpj.getPieceJustificative().getId() : null)
+          .filter(Objects::nonNull)
+          .collect(Collectors.toList());
+
+      // Récupérer le dernier statut de la demande directement depuis l'historique
       String statut = null;
-      if (demande.getHistoriques() != null && !demande.getHistoriques().isEmpty()) {
-        // Récupérer le dernier historique (le plus récent)
-        HistoriqueStatutDemande dernierHistorique = demande.getHistoriques()
-            .stream()
+      Integer statutId = null;
+      List<HistoriqueStatutDemande> historiques = historiqueStatutDemandeRepository.findByDemandeId(demande.getId());
+      if (historiques != null && !historiques.isEmpty()) {
+        HistoriqueStatutDemande dernierHistorique = historiques.stream()
             .max((h1, h2) -> h1.getDateChangement().compareTo(h2.getDateChangement()))
             .orElse(null);
         if (dernierHistorique != null && dernierHistorique.getStatutDemande() != null) {
           statut = dernierHistorique.getStatutDemande().getLibelle();
+          statutId = dernierHistorique.getStatutDemande().getId();
         }
       }
 
@@ -814,10 +957,14 @@ public class DemandeVisaService {
           .lieuEntree(visaTransformable != null ? visaTransformable.getLieuEntree() : null)
           // Type de visa
           .visaType(demande.getTypeVisa() != null ? demande.getTypeVisa().getLibelle() : null)
+          .visaTypeId(demande.getTypeVisa() != null ? demande.getTypeVisa().getId() : null)
           // Statut de la demande
           .statut(statut)
+          .statutId(statutId)
           // Pièces justificatives
           .pieces(pieces)
+          .piecesIds(piecesIds)
+          .piecesJustificativeIds(piecesJustificativeIds)
           .build();
 
     } catch (Exception e) {
@@ -845,7 +992,10 @@ public class DemandeVisaService {
           .orElseThrow(() -> new IllegalArgumentException("Demande non trouvée avec l'ID: " + demandeId));
       log.info("[INFO] Demande trouvée: {}", demandeId);
 
-      // Vérifier que le statut est "En attente" (id = 1)
+        // Vérifier que les champs requis sont complets avant de permettre le passage au statut 2
+        validerChampsObligatoiresMiseAJour(demandeDTO);
+
+      // Vérifier que le statut est "CREE"
       if (demande.getHistoriques() != null && !demande.getHistoriques().isEmpty()) {
         HistoriqueStatutDemande dernierHistorique = demande.getHistoriques()
             .stream()
@@ -853,12 +1003,12 @@ public class DemandeVisaService {
             .orElse(null);
 
         if (dernierHistorique != null && dernierHistorique.getStatutDemande() != null) {
-          Integer statutId = dernierHistorique.getStatutDemande().getId();
-          if (!statutId.equals(1)) {
-            log.warn("[WARNING] Tentative de modification avec statut != 1. Statut actuel: {}", statutId);
-            throw new IllegalStateException("Seules les demandes avec le statut 'En attente' peuvent être modifiées");
+          String statutActuel = dernierHistorique.getStatutDemande().getLibelle();
+          if (!"CREE".equalsIgnoreCase(statutActuel)) {
+            log.warn("[WARNING] Tentative de modification avec statut != CREE. Statut actuel: {}", statutActuel);
+            throw new IllegalStateException("Seules les demandes avec le statut 'CREE' peuvent être modifiées");
           }
-          log.info("[INFO] Statut valide pour modification (id=1)");
+          log.info("[INFO] Statut valide pour modification (CREE)");
         }
       }
 
@@ -963,6 +1113,14 @@ public class DemandeVisaService {
       // Sauvegarder la demande
       demande = demandeRepository.saveAndFlush(demande);
       log.info("[INFO] Demande {} mise à jour avec succès", demandeId);
+
+          StatutDemande statutModifie = getStatut("SCANNE");
+        HistoriqueStatutDemande historiqueModifie = new HistoriqueStatutDemande();
+        historiqueModifie.setDemande(demande);
+        historiqueModifie.setStatutDemande(statutModifie);
+        historiqueModifie.setCommentaire("Demande modifiée");
+        historiqueStatutDemandeRepository.save(historiqueModifie);
+        log.info("[INFO] Statut de la demande {} passé à 2 après modification", demandeId);
 
       // Convertir en DTO pour éviter les références circulaires
       return convertDemandeToDTO(demande);
@@ -1242,5 +1400,87 @@ public class DemandeVisaService {
       log.error("Erreur enregistrement transfert visa: {}", e.getMessage(), e);
       throw new RuntimeException("Erreur lors de l'enregistrement du transfert: " + e.getMessage(), e);
     }
+  }
+
+  /**
+   * Enregistre une nouvelle demande de visa avec upload de fichiers
+   * 
+   * @param demandeSaisie les données saisies du formulaire
+   * @param files les fichiers uploadés pour les pièces justificatives
+   * @return Demande créée
+   * @throws RuntimeException en cas d'erreur
+   */
+  @Transactional
+  public Demande enregistrerDemandeVisaAvecFichiers(DemandeVisaSaisieDTO demandeSaisie, Map<String, MultipartFile> files) {
+    log.info("Début enregistrement demande visa avec fichiers - Demandeur: {} {}", 
+        demandeSaisie.getNom(), demandeSaisie.getPrenom());
+
+    try {
+      // 1. Enregistrer la demande sans fichiers d'abord
+      Demande demande = enregistrerDemandeVisa(demandeSaisie);
+      log.info("Demande enregistrée avec l'ID: {}", demande.getId());
+
+      // Vérifier que toutes les pièces obligatoires du type de visa ont bien un fichier
+      validerPiecesObligatoires(demande, files);
+
+      // 2. Sauvegarder les fichiers et créer/mettre à jour les DemandePieceJustificative
+      sauvegarderFichiersPieces(demande, files);
+
+      log.info("Enregistrement demande visa avec fichiers terminé avec succès");
+      return demande;
+
+    } catch (Exception e) {
+      log.error("Erreur lors de l'enregistrement de la demande avec fichiers: {}", e.getMessage(), e);
+      throw new RuntimeException("Erreur lors de l'enregistrement: " + e.getMessage(), e);
+    }
+  }
+
+  @Transactional
+  public DemandeVisaCplDTO updateDemandeVisaAvecFichiers(Integer demandeId, DemandeVisaSaisieDTO demandeDTO,
+      Map<String, MultipartFile> files) {
+    updateDemandeVisa(demandeId, demandeDTO);
+    Demande demande = demandeRepository.findById(demandeId)
+        .orElseThrow(() -> new IllegalArgumentException("Demande non trouvée avec l'ID: " + demandeId));
+
+    // Si une pièce obligatoire manque, l'exception déclenche un rollback de la mise à jour
+    validerPiecesObligatoires(demande, files);
+    sauvegarderFichiersPieces(demande, files);
+    return convertDemandeToDTO(demande);
+  }
+
+  @Transactional
+  public DemandeVisaCplDTO passerDemandeEnScanne(Integer demandeId) {
+    Demande demande = demandeRepository.findById(demandeId)
+        .orElseThrow(() -> new IllegalArgumentException("Demande non trouvée avec l'ID: " + demandeId));
+
+    List<HistoriqueStatutDemande> historiques = historiqueStatutDemandeRepository.findByDemandeId(demandeId);
+    HistoriqueStatutDemande dernierHistorique = historiques.stream()
+        .max((h1, h2) -> h1.getDateChangement().compareTo(h2.getDateChangement()))
+        .orElse(null);
+
+    if (dernierHistorique == null || dernierHistorique.getStatutDemande() == null
+        || !"CREE".equalsIgnoreCase(dernierHistorique.getStatutDemande().getLibelle())) {
+      throw new IllegalStateException("Seules les demandes au statut 'CREE' peuvent passer à 'SCANNE'");
+    }
+
+    StatutDemande statutScanne = getStatut("SCANNE");
+    HistoriqueStatutDemande historiqueScanne = new HistoriqueStatutDemande();
+    historiqueScanne.setDemande(demande);
+    historiqueScanne.setStatutDemande(statutScanne);
+    historiqueScanne.setCommentaire("Demande passée en SCANNE");
+    historiqueStatutDemandeRepository.save(historiqueScanne);
+
+    log.info("[INFO] Demande {} passée au statut SCANNE", demandeId);
+    return convertDemandeToDTO(demande);
+  }
+
+  /**
+   * Récupère les informations d'un fichier de pièce justificative
+   * @param pieceId l'ID de la pièce justificative
+   * @return les informations du fichier (chemin, nom)
+   */
+  public DemandePieceJustificative getPieceJustificativeInfo(Integer pieceId) {
+    return demandePieceJustificativeRepository.findById(pieceId)
+        .orElse(null);
   }
 }
