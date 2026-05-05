@@ -14,37 +14,45 @@ import java.util.List;
 @AllArgsConstructor
 public class Demande {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_demande")
-    private Integer id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "id_demande")
+  private Integer id;
 
-    @Column(name = "date_demande", nullable = false)
-    private LocalDateTime dateDemande;
+  @Column(name = "date_demande", nullable = false)
+  private LocalDateTime dateDemande;
 
-    @Column(name = "observations", columnDefinition = "TEXT")
-    private String observations;
+  @Column(name = "observations", columnDefinition = "TEXT")
+  private String observations;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "demandeur_id", nullable = false)
-    private Demandeur demandeur;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "demandeur_id", nullable = false)
+  private Demandeur demandeur;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "type_visa_id", nullable = false)
-    private VisaType typeVisa;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "type_visa_id", nullable = false)
+  private VisaType typeVisa;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "type_demande_id", nullable = false)
-    private DemandeType typeDemande;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "type_demande_id", nullable = false)
+  private DemandeType typeDemande;
 
-    @OneToMany(mappedBy = "demande", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<DemandePieceJustificative> pieceJustificatives;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "passeport_id", nullable = false)
+  private Passeport passeport;
 
-    @OneToMany(mappedBy = "demande", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<HistoriqueStatutDemande> historiques;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "visa_transformable_id")
+  private VisaTransformable visaTransformable;
 
-    @PrePersist
-    protected void onCreate() {
-        dateDemande = LocalDateTime.now();
-    }
+  @OneToMany(mappedBy = "demande", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+  private List<DemandePieceJustificative> pieceJustificatives;
+
+  @OneToMany(mappedBy = "demande", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+  private List<HistoriqueStatutDemande> historiques;
+
+  @PrePersist
+  protected void onCreate() {
+    dateDemande = LocalDateTime.now();
+  }
 }

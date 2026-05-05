@@ -9,16 +9,21 @@ import com.itu.visabackoffice.services.DemandeVisaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 // import org.springframework.stereotype.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/demande-visa")
@@ -66,16 +71,21 @@ public class DemandeVisaRestController {
   }
 
   /**
-   * Endpoint pour créer une nouvelle demande de visa
-   * @param demandeSaisie les données saisies du formulaire
+   * Endpoint pour créer une nouvelle demande de visa avec fichiers
+non je eids download les fichiers deja uploader   * @param demandeData les données saisies du formulaire
+   * @param files les fichiers des pièces justificatives
    * @return ApiResponse avec le résultat de la création
    */
-  @PostMapping("/demande-saisie-ajout")
-  public ResponseEntity<ApiResponse<Object>> ajouterDemandeVisa(@RequestBody DemandeVisaSaisieDTO demandeSaisie) {
+  @PostMapping(value = "/demande-saisie-ajout", consumes = "multipart/form-data")
+  public ResponseEntity<ApiResponse<Object>> ajouterDemandeVisa(
+      DemandeVisaSaisieDTO demandeData,
+      MultipartHttpServletRequest request) {
     try {
-      log.info("Création demande visa - Demandeur: {} {}", demandeSaisie.getNom(), demandeSaisie.getPrenom());
+      log.info("Création demande visa avec fichiers - Demandeur: {} {}", 
+          demandeData.getNom(), demandeData.getPrenom());
       
-      Object resultat = demandeVisaService.enregistrerDemandeVisa(demandeSaisie);
+      // Passer les données et fichiers au service
+      Object resultat = demandeVisaService.enregistrerDemandeVisaAvecFichiers(demandeData, request.getFileMap());
       
       ApiResponse<Object> response = ApiResponse.success(
           resultat,
@@ -156,14 +166,16 @@ public class DemandeVisaRestController {
    * @param demandeSaisie les nouvelles données
    * @return ApiResponse avec le résultat de la mise à jour
    */
-  @PutMapping("/demande-update/{id}")
+  @PutMapping(value = "/demande-update/{id}", consumes = "multipart/form-data")
   public ResponseEntity<ApiResponse<DemandeVisaCplDTO>> updateDemandeVisa(
       @PathVariable("id") Integer demandeId,
-      @RequestBody DemandeVisaSaisieDTO demandeSaisie) {
+      DemandeVisaSaisieDTO demandeSaisie,
+      MultipartHttpServletRequest request) {
     try {
       log.info("Mise à jour demande visa ID: {}", demandeId);
       
-      DemandeVisaCplDTO resultat = demandeVisaService.updateDemandeVisa(demandeId, demandeSaisie);
+      DemandeVisaCplDTO resultat = demandeVisaService.updateDemandeVisaAvecFichiers(
+          demandeId, demandeSaisie, request.getFileMap());
       
       ApiResponse<DemandeVisaCplDTO> response = ApiResponse.success(
           resultat,
@@ -192,6 +204,50 @@ public class DemandeVisaRestController {
           "Une erreur inattendue s'est produite"
       );
       
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+  }
+
+  /**
+   * Endpoint pour faire passer une demande au statut SCANNE
+   * @param demandeId l'ID de la demande
+   * @return ApiResponse avec la demande mise à jour
+   */
+  @PutMapping("/demande-scanne/{id}")
+  public ResponseEntity<ApiResponse<DemandeVisaCplDTO>> passerDemandeEnScanne(
+      @PathVariable("id") Integer demandeId) {
+    try {
+      log.info("Passage de la demande {} au statut SCANNE", demandeId);
+
+      DemandeVisaCplDTO resultat = demandeVisaService.passerDemandeEnScanne(demandeId);
+
+      ApiResponse<DemandeVisaCplDTO> response = ApiResponse.success(
+          resultat,
+          "Demande passée au statut SCANNE avec succès"
+      );
+
+      return ResponseEntity.ok(response);
+
+    } catch (RuntimeException e) {
+      log.error("Erreur métier passage SCANNE: {}", e.getMessage());
+
+      ApiResponse<DemandeVisaCplDTO> response = ApiResponse.error(
+          400,
+          e.getMessage(),
+          "Erreur lors du passage au statut SCANNE"
+      );
+
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+
+    } catch (Exception e) {
+      log.error("Erreur inattendue passage SCANNE: {}", e.getMessage(), e);
+
+      ApiResponse<DemandeVisaCplDTO> response = ApiResponse.error(
+          500,
+          "Erreur serveur interne",
+          "Une erreur inattendue s'est produite"
+      );
+
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
   }
@@ -243,6 +299,58 @@ public class DemandeVisaRestController {
       );
       
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+  }
+
+  /**
+   * Endpoint pour télécharger un fichier d'une pièce justificative
+   * @param pieceId l'ID de la pièce justificative
+   * @return le fichier en téléchargement
+   */
+  @GetMapping("/download-piece/{pieceId}")
+  public ResponseEntity<?> downloadPiece(@PathVariable Integer pieceId) {
+    try {
+      log.info("Téléchargement pièce justificative ID: {}", pieceId);
+      
+      // Récupérer les informations du fichier depuis la base de données
+      com.itu.visabackoffice.models.DemandePieceJustificative pieceInfo = 
+          demandeVisaService.getPieceJustificativeInfo(pieceId);
+      
+      if (pieceInfo == null) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Pièce non trouvée");
+      }
+      
+      // Construire le chemin du fichier
+      Path filePath = Paths.get(pieceInfo.getPath());
+      
+      // Vérifier que le fichier existe
+      if (!Files.exists(filePath)) {
+        log.warn("Fichier non trouvé: {}", filePath);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Fichier non trouvé");
+      }
+      
+      // Lire le contenu du fichier
+      byte[] fileContent = Files.readAllBytes(filePath);
+      
+      // Déterminer le type de contenu
+      String contentType = "application/pdf";
+      if (pieceInfo.getNomFichier().endsWith(".pdf")) {
+        contentType = "application/pdf";
+      } else if (pieceInfo.getNomFichier().endsWith(".doc") || pieceInfo.getNomFichier().endsWith(".docx")) {
+        contentType = "application/msword";
+      }
+      
+      // Retourner le fichier
+      return ResponseEntity.ok()
+          .header(HttpHeaders.CONTENT_DISPOSITION, 
+              "attachment; filename=\"" + pieceInfo.getNomFichier() + "\"")
+          .contentType(MediaType.parseMediaType(contentType))
+          .body(fileContent);
+      
+    } catch (Exception e) {
+      log.error("Erreur téléchargement pièce: {}", e.getMessage(), e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body("Erreur lors du téléchargement");
     }
   }
 }
