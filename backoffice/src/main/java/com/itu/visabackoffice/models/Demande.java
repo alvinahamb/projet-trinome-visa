@@ -25,6 +25,9 @@ public class Demande {
   @Column(name = "observations", columnDefinition = "TEXT")
   private String observations;
 
+  @Column(name = "url_demande", length = 255)
+  private String urlDemande;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "demandeur_id", nullable = false)
   private Demandeur demandeur;
