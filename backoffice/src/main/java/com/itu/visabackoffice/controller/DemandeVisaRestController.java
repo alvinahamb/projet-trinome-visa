@@ -5,6 +5,7 @@ import com.itu.visabackoffice.dto.DonneesDemandeVisaDTO;
 import com.itu.visabackoffice.dto.DemandeVisaSaisieDTO;
 import com.itu.visabackoffice.dto.DemandeVisaCplDTO;
 import com.itu.visabackoffice.dto.DemandeurDemandesDTO;
+import com.itu.visabackoffice.dto.DemandeFicheDTO;
 import java.util.List;
 import com.itu.visabackoffice.services.DemandeVisaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -158,6 +159,50 @@ non je eids download les fichiers deja uploader   * @param demandeData les donn�
           "Une erreur inattendue s'est produite"
       );
       
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+  }
+
+  /**
+   * Endpoint pour récupérer les détails d'une demande (fiche) avec historique des statuts
+   * @param demandeId l'ID de la demande
+   * @return ApiResponse avec les détails de la demande et l'historique
+   */
+  @GetMapping("/demande-fiche/{id}")
+  public ResponseEntity<ApiResponse<DemandeFicheDTO>> getDemandeFiche(
+      @PathVariable("id") Integer demandeId) {
+    try {
+      log.info("Récupération fiche demande ID: {}", demandeId);
+
+      DemandeFicheDTO resultat = demandeVisaService.getDemandeFiche(demandeId);
+
+      ApiResponse<DemandeFicheDTO> response = ApiResponse.success(
+          resultat,
+          "Fiche demande récupérée avec succès"
+      );
+
+      return ResponseEntity.ok(response);
+
+    } catch (RuntimeException e) {
+      log.error("Erreur métier récupération fiche demande: {}", e.getMessage());
+
+      ApiResponse<DemandeFicheDTO> response = ApiResponse.error(
+          400,
+          e.getMessage(),
+          "Erreur lors de la récupération de la fiche demande"
+      );
+
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+
+    } catch (Exception e) {
+      log.error("Erreur inattendue récupération fiche demande: {}", e.getMessage(), e);
+
+      ApiResponse<DemandeFicheDTO> response = ApiResponse.error(
+          500,
+          "Erreur serveur interne",
+          "Une erreur inattendue s'est produite"
+      );
+
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
   }
