@@ -8,10 +8,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/")
 public class HomeController {
 
+  // ================== HOME ==================
+
   @GetMapping("/")
   public String home() {
     return "home";
   }
+
+  // ================== DEMANDE VISA SAISIE ==================
 
   @GetMapping("/visa-saisie")
   public String demandeVisaSaisie() {
@@ -23,10 +27,14 @@ public class HomeController {
     return "demande-visa-saisie";
   }
 
+  // ================== DEMANDE VISA LIST ==================
+
   @GetMapping("/visa-list")
   public String demandeVisaList() {
     return "demande-visa-list";
   }
+
+  // ================== DUPLICATA SAISIE ==================
 
   @GetMapping("/duplicata")
   public String duplicata() {
@@ -37,6 +45,8 @@ public class HomeController {
   public String duplicataSaisie() {
     return "duplicata-saisie";
   }
+
+  // ================== TRANSFERT VISA SAISIE ==================
 
   @GetMapping("/transfert-visa-saisie")
   public String transfertVisaSaisie() {

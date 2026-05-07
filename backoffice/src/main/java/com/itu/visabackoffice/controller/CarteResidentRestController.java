@@ -19,6 +19,8 @@ public class CarteResidentRestController {
     @Autowired
     private DemandeVisaService demandeVisaService;
 
+    // ================== GET: LECTURES ==================
+
     /**
      * Endpoint pour rechercher une carte résident par sa référence - utilisé pour la demande de duplicata
      * @param reference la référence de la carte résident

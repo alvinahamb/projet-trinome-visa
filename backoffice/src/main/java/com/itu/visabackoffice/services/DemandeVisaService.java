@@ -95,6 +95,9 @@ public class DemandeVisaService {
   @Autowired
   private VisaRepository visaRepository;
 
+  @Autowired
+  private QrCodeGeneratorService qrCodeGeneratorService;
+
   /**
    * Récupère toutes les données nécessaires pour une demande de visa
    * 
@@ -199,6 +202,25 @@ public class DemandeVisaService {
     demande.setUrlDemande(DEMANDE_FICHE_BASE_URL + demande.getId());
   }
 
+  private void setDemandeQrCode(Demande demande) {
+    if (demande == null || demande.getId() == null) {
+      return;
+    }
+
+    try {
+      String url = DEMANDE_FICHE_BASE_URL + demande.getId();
+      Map<String, String> qrResult = qrCodeGeneratorService.genererQrCode(url, demande.getId());
+      
+      demande.setQrLien(qrResult.get("qrLien"));
+      demande.setQrChemin(qrResult.get("qrChemin"));
+      
+      log.info("QR code généré pour demande ID: {} - Lien: {}", demande.getId(), demande.getQrLien());
+    } catch (Exception e) {
+      log.error("Erreur lors de la génération du QR code pour demande ID: {}", demande.getId(), e);
+      // On ne lève pas l'exception, on continue quand même
+    }
+  }
+
   private StatutDemande getStatut(String libelle) {
     return statutDemandeRepository.findByLibelleIgnoreCase(libelle)
         .orElseThrow(() -> new IllegalArgumentException("Statut '" + libelle + "' non trouvé"));
@@ -247,6 +269,7 @@ public class DemandeVisaService {
     demandeOriginal.setTypeDemande(demandeType); // demande_type = 1
     demandeOriginal = demandeRepository.saveAndFlush(demandeOriginal);
     setDemandeUrl(demandeOriginal);
+    setDemandeQrCode(demandeOriginal);
     demandeOriginal = demandeRepository.saveAndFlush(demandeOriginal);
     log.info("Demande originale sauvegardée avec l'ID: {}", demandeOriginal.getId());
 
@@ -315,6 +338,7 @@ public class DemandeVisaService {
     demandeDuplicata.setTypeDemande(demandeTypeDuplicata); // demande_type = 3 (DUPLICATA)
     demandeDuplicata = demandeRepository.saveAndFlush(demandeDuplicata);
     setDemandeUrl(demandeDuplicata);
+    setDemandeQrCode(demandeDuplicata);
     demandeDuplicata = demandeRepository.saveAndFlush(demandeDuplicata);
     log.info("Demande duplicata sauvegardée avec l'ID: {}", demandeDuplicata.getId());
 
@@ -394,6 +418,7 @@ public class DemandeVisaService {
 
     demandeTransfertCompleted = demandeRepository.saveAndFlush(demandeTransfertCompleted);
     setDemandeUrl(demandeTransfertCompleted);
+    setDemandeQrCode(demandeTransfertCompleted);
     demandeTransfertCompleted = demandeRepository.saveAndFlush(demandeTransfertCompleted);
     // Update passport number after obtaining demande ID
     passeport.setNumero("OLD-PASSPORT-" + demandeTransfertCompleted.getId());
@@ -469,6 +494,7 @@ public class DemandeVisaService {
     demandeTransfertPending.setTypeDemande(demandeType); // demande_type = 1
     demandeTransfertPending = demandeRepository.saveAndFlush(demandeTransfertPending);
     setDemandeUrl(demandeTransfertPending);
+    setDemandeQrCode(demandeTransfertPending);
     demandeTransfertPending = demandeRepository.saveAndFlush(demandeTransfertPending);
     log.info("Demande transfert pending sauvegardée avec l'ID: {}", demandeTransfertPending.getId());
 
@@ -662,6 +688,9 @@ public class DemandeVisaService {
         demande.setVisaTransformable(visaTransformable);
         demande.setTypeVisa(visaType);
         demande.setTypeDemande(demandeType);
+        demande = demandeRepository.saveAndFlush(demande);
+        setDemandeUrl(demande);
+        setDemandeQrCode(demande);
         demande = demandeRepository.saveAndFlush(demande);
         log.info("Demande sauvegardée avec l'ID: {}", demande.getId());
 

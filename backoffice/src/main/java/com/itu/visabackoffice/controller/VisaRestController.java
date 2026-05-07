@@ -23,10 +23,10 @@ public class VisaRestController {
   @Autowired
   private DemandeVisaService demandeVisaService;
 
+  // ================== GET: LECTURES ==================
+
   /**
-   * Endpoint pour rechercher un visa par sa référence - utilisé pour le transfert
-   * visa
-   * 
+   * Endpoint pour rechercher un visa par sa référence - utilisé pour le transfert visa
    * @param reference la référence du visa
    * @return ApiResponse avec les informations du visa et du demandeur si trouvé
    */
@@ -71,11 +71,11 @@ public class VisaRestController {
     }
   }
 
+  // ================== POST: CRÉATIONS ==================
+
   /**
    * Endpoint pour créer une demande de transfert de visa
-   * 
-   * @param transfertSaisie les données du transfert (visa reference + new
-   *                        passport data)
+   * @param transfertSaisie les données du transfert (visa reference + new passport data)
    * @return ApiResponse avec le résultat de la création
    */
   @PostMapping("/transfer-request")

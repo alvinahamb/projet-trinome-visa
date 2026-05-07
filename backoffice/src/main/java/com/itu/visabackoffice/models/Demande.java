@@ -28,6 +28,12 @@ public class Demande {
   @Column(name = "url_demande", length = 255)
   private String urlDemande;
 
+  @Column(name = "qr_lien", length = 255)
+  private String qrLien;
+
+  @Column(name = "qr_chemin", columnDefinition = "TEXT")
+  private String qrChemin;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "demandeur_id", nullable = false)
   private Demandeur demandeur;

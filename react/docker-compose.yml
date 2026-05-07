@@ -11,11 +11,14 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_URL=http://localhost:8081
-    command: sh -c "npm install && npm run dev"
+      - VITE_API_URL=http://localhost:8080
+      - NODE_ENV=development
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     networks:
       - visa-network
+    restart: unless-stopped
 
 networks:
   visa-network:
     driver: bridge
+

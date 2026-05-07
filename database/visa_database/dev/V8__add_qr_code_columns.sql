@@ -1,0 +1,2 @@
+ALTER TABLE demandes ADD COLUMN qr_lien VARCHAR(255);
+ALTER TABLE demandes ADD COLUMN qr_chemin TEXT;
