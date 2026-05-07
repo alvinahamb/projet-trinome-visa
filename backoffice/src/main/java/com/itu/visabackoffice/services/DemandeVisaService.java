@@ -4,6 +4,10 @@ import com.itu.visabackoffice.dto.DonneesDemandeVisaDTO;
 import com.itu.visabackoffice.dto.DemandeVisaSaisieDTO;
 import com.itu.visabackoffice.dto.DemandeVisaCplDTO;
 import com.itu.visabackoffice.dto.TransfertVisaSaisieDTO;
+import com.itu.visabackoffice.dto.DemandeurDemandesDTO;
+import com.itu.visabackoffice.dto.DemandeurInfoDTO;
+import com.itu.visabackoffice.dto.DemandeFicheDTO;
+import com.itu.visabackoffice.dto.HistoriqueStatutDTO;
 import com.itu.visabackoffice.exceptions.ExpectedException;
 import com.itu.visabackoffice.models.*;
 import com.itu.visabackoffice.repositories.GenreRepository;
@@ -26,9 +30,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import lombok.extern.slf4j.Slf4j;
-import java.util.Objects;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,6 +48,7 @@ public class DemandeVisaService {
   public static final String SANS_DONNEES_ANTERIEURS = "NO_VISA_FOUND";
 
   private static final long PASSPORT_DELIVRANCE_MONTHS_BEFORE = 12;
+  private static final String DEMANDE_FICHE_BASE_URL = "localhost:5173/demande-fiche/";
 
   @Autowired
   private GenreRepository genreRepository;
@@ -88,6 +94,9 @@ public class DemandeVisaService {
 
   @Autowired
   private VisaRepository visaRepository;
+
+  @Autowired
+  private QrCodeGeneratorService qrCodeGeneratorService;
 
   /**
    * Récupère toutes les données nécessaires pour une demande de visa
@@ -185,6 +194,33 @@ public class DemandeVisaService {
     }
   }
 
+  private void setDemandeUrl(Demande demande) {
+    if (demande == null || demande.getId() == null) {
+      return;
+    }
+
+    demande.setUrlDemande(DEMANDE_FICHE_BASE_URL + demande.getId());
+  }
+
+  private void setDemandeQrCode(Demande demande) {
+    if (demande == null || demande.getId() == null) {
+      return;
+    }
+
+    try {
+      String url = DEMANDE_FICHE_BASE_URL + demande.getId();
+      Map<String, String> qrResult = qrCodeGeneratorService.genererQrCode(url, demande.getId());
+      
+      demande.setQrLien(qrResult.get("qrLien"));
+      demande.setQrChemin(qrResult.get("qrChemin"));
+      
+      log.info("QR code généré pour demande ID: {} - Lien: {}", demande.getId(), demande.getQrLien());
+    } catch (Exception e) {
+      log.error("Erreur lors de la génération du QR code pour demande ID: {}", demande.getId(), e);
+      // On ne lève pas l'exception, on continue quand même
+    }
+  }
+
   private StatutDemande getStatut(String libelle) {
     return statutDemandeRepository.findByLibelleIgnoreCase(libelle)
         .orElseThrow(() -> new IllegalArgumentException("Statut '" + libelle + "' non trouvé"));
@@ -231,6 +267,9 @@ public class DemandeVisaService {
     demandeOriginal.setVisaTransformable(visaTransformable);
     demandeOriginal.setTypeVisa(visaType);
     demandeOriginal.setTypeDemande(demandeType); // demande_type = 1
+    demandeOriginal = demandeRepository.saveAndFlush(demandeOriginal);
+    setDemandeUrl(demandeOriginal);
+    setDemandeQrCode(demandeOriginal);
     demandeOriginal = demandeRepository.saveAndFlush(demandeOriginal);
     log.info("Demande originale sauvegardée avec l'ID: {}", demandeOriginal.getId());
 
@@ -297,6 +336,9 @@ public class DemandeVisaService {
     demandeDuplicata.setVisaTransformable(visaTransformable);
     demandeDuplicata.setTypeVisa(visaType);
     demandeDuplicata.setTypeDemande(demandeTypeDuplicata); // demande_type = 3 (DUPLICATA)
+    demandeDuplicata = demandeRepository.saveAndFlush(demandeDuplicata);
+    setDemandeUrl(demandeDuplicata);
+    setDemandeQrCode(demandeDuplicata);
     demandeDuplicata = demandeRepository.saveAndFlush(demandeDuplicata);
     log.info("Demande duplicata sauvegardée avec l'ID: {}", demandeDuplicata.getId());
 
@@ -375,6 +417,9 @@ public class DemandeVisaService {
     demandeTransfertCompleted.setPasseport(passeport);
 
     demandeTransfertCompleted = demandeRepository.saveAndFlush(demandeTransfertCompleted);
+    setDemandeUrl(demandeTransfertCompleted);
+    setDemandeQrCode(demandeTransfertCompleted);
+    demandeTransfertCompleted = demandeRepository.saveAndFlush(demandeTransfertCompleted);
     // Update passport number after obtaining demande ID
     passeport.setNumero("OLD-PASSPORT-" + demandeTransfertCompleted.getId());
     passeportRepository.save(passeport);
@@ -447,6 +492,9 @@ public class DemandeVisaService {
     demandeTransfertPending.setVisaTransformable(visaTransformable);
     demandeTransfertPending.setTypeVisa(visaType);
     demandeTransfertPending.setTypeDemande(demandeType); // demande_type = 1
+    demandeTransfertPending = demandeRepository.saveAndFlush(demandeTransfertPending);
+    setDemandeUrl(demandeTransfertPending);
+    setDemandeQrCode(demandeTransfertPending);
     demandeTransfertPending = demandeRepository.saveAndFlush(demandeTransfertPending);
     log.info("Demande transfert pending sauvegardée avec l'ID: {}", demandeTransfertPending.getId());
 
@@ -641,6 +689,9 @@ public class DemandeVisaService {
         demande.setTypeVisa(visaType);
         demande.setTypeDemande(demandeType);
         demande = demandeRepository.saveAndFlush(demande);
+        setDemandeUrl(demande);
+        setDemandeQrCode(demande);
+        demande = demandeRepository.saveAndFlush(demande);
         log.info("Demande sauvegardée avec l'ID: {}", demande.getId());
 
         // ========== CRÉATION DE L'HISTORIQUE STATUT ==========
@@ -834,6 +885,36 @@ public class DemandeVisaService {
     }
   }
 
+    @Transactional(readOnly = true)
+    public DemandeFicheDTO getDemandeFiche(Integer demandeId) {
+    if (demandeId == null) {
+      throw new IllegalArgumentException("Demande ID obligatoire");
+    }
+
+    Demande demande = demandeRepository.findById(demandeId)
+      .orElseThrow(() -> new IllegalArgumentException("Demande non trouvée avec l'ID: " + demandeId));
+
+    DemandeVisaCplDTO demandeDto = convertDemandeToDTO(demande);
+
+    List<HistoriqueStatutDTO> historiques = historiqueStatutDemandeRepository.findByDemandeId(demandeId)
+      .stream()
+      .sorted(Comparator.comparing(HistoriqueStatutDemande::getDateChangement,
+        Comparator.nullsLast(Comparator.naturalOrder())))
+      .map(h -> HistoriqueStatutDTO.builder()
+        .id(h.getId())
+        .statut(h.getStatutDemande() != null ? h.getStatutDemande().getLibelle() : null)
+        .statutId(h.getStatutDemande() != null ? h.getStatutDemande().getId() : null)
+        .commentaire(h.getCommentaire())
+        .dateChangement(h.getDateChangement())
+        .build())
+      .collect(Collectors.toList());
+
+    return DemandeFicheDTO.builder()
+      .demande(demandeDto)
+      .historiques(historiques)
+      .build();
+    }
+
   private VisaTransformable resolveVisaTransformable(Demande demande) {
     if (demande == null) {
       return null;
@@ -972,6 +1053,77 @@ public class DemandeVisaService {
           demande != null ? demande.getId() : "UNKNOWN", e.getMessage());
       throw new RuntimeException("Erreur conversion: " + e.getMessage(), e);
     }
+  }
+
+  @Transactional(readOnly = true)
+  public DemandeurDemandesDTO getDemandeurAvecDemandesParNumero(String numero) {
+    if (numero == null || numero.trim().isEmpty()) {
+      throw new IllegalArgumentException("Le numero est obligatoire");
+    }
+
+    String trimmed = numero.trim();
+    boolean isPassport = trimmed.regionMatches(true, 0, "PASS", 0, 4);
+
+    Demandeur demandeur = null;
+
+    if (isPassport) {
+      String passeportNumero = trimmed.substring(4).trim();
+      if (!passeportNumero.isEmpty()) {
+        char firstChar = passeportNumero.charAt(0);
+        if (firstChar == '-' || firstChar == '_' || firstChar == ':') {
+          passeportNumero = passeportNumero.substring(1).trim();
+        }
+      }
+
+      if (passeportNumero.isEmpty()) {
+        throw new IllegalArgumentException("Numero de passeport invalide");
+      }
+
+      Passeport passeport = passeportRepository.findByNumero(passeportNumero).orElse(null);
+      if (passeport != null) {
+        demandeur = passeport.getDemandeur();
+      }
+    } else {
+      Integer demandeId;
+      try {
+        demandeId = Integer.parseInt(trimmed);
+      } catch (NumberFormatException e) {
+        throw new IllegalArgumentException("Numero de demande invalide");
+      }
+
+      Demande demande = demandeRepository.findById(demandeId).orElse(null);
+      if (demande != null) {
+        demandeur = demande.getDemandeur();
+      }
+    }
+
+    if (demandeur == null) {
+      return null;
+    }
+
+    List<DemandeVisaCplDTO> demandes = demandeRepository.findByDemandeurId(demandeur.getId()).stream()
+        .map(this::convertDemandeToDTO)
+        .collect(Collectors.toList());
+
+    DemandeurInfoDTO demandeurInfo = DemandeurInfoDTO.builder()
+        .id(demandeur.getId())
+        .nom(demandeur.getNom())
+        .prenom(demandeur.getPrenom())
+        .genre(demandeur.getGenre() != null ? demandeur.getGenre().getLibelle() : null)
+        .dateNaissance(demandeur.getDateNaissance())
+        .lieuNaissance(demandeur.getLieuNaissance())
+        .telephone(demandeur.getTelephone())
+        .email(demandeur.getEmail())
+        .adresse(demandeur.getAdresse())
+        .nationalite(demandeur.getNationalite() != null ? demandeur.getNationalite().getLibelle() : null)
+        .situationFamiliale(
+            demandeur.getSituationFamiliale() != null ? demandeur.getSituationFamiliale().getLibelle() : null)
+        .build();
+
+    return DemandeurDemandesDTO.builder()
+        .demandeur(demandeurInfo)
+        .demandes(demandes)
+        .build();
   }
 
   /**
